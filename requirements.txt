@@ -1,0 +1,11 @@
+# Python dependencies for ReciboSplit (backend, MCP server, and tests).
+# Install into the project venv with: uv pip install -r requirements.txt
+fastapi==0.139.0
+uvicorn==0.51.0
+python-multipart==0.0.32
+pyturso==0.6.1
+python-dotenv==1.2.2
+mcp[cli]==1.28.1
+pytest==9.1.1
+httpx==0.28.1
+openai==2.45.0

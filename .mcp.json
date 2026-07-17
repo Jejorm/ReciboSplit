@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "recibosplit": {
+      "command": "/Users/jejorm/Desktop/Education/ReciboSplit/.venv/bin/python",
+      "args": ["/Users/jejorm/Desktop/Education/ReciboSplit/mcp_server.py"]
+    }
+  }
+}
