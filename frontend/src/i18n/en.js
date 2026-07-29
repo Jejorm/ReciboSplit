@@ -175,4 +175,50 @@ export default {
   'balanceBadge.owed': 'owed {amount}',
   'balanceBadge.owes': 'owes {amount}',
   'balanceBadge.settled': 'settled',
+
+  // Backend-originated error messages (translated on the frontend only — see
+  // i18n/apiMessages.js for the matcher that maps a raw `detail` string onto
+  // one of these keys). Values here reproduce the backend's exact English
+  // wording so EN users see identical text to before this catalog existed.
+  'apiErrors.eventNotFound': 'Event {id} does not exist',
+  'apiErrors.participantNotFound': 'Participant {id} does not exist',
+  'apiErrors.itemNotFound': 'Item {id} does not exist',
+  'apiErrors.receiptNotFound': 'Receipt {id} does not exist',
+  'apiErrors.payerNotInEvent':
+    'Participant {participantId} is not a participant of event {eventId}; add them via add_participant_to_event() first',
+  'apiErrors.assigneeNotInEvent':
+    'Participant {participantId} is not a participant of event {eventId}; cannot assign item {itemId} to them',
+  'apiErrors.sharesSumMismatch': 'Item assignment shares must sum to 1.0, got {total}',
+  'apiErrors.assignmentRequired': 'At least one assignment is required for item {itemId}',
+  'apiErrors.duplicateParticipants': 'Duplicate participant ids in assignments for item {itemId}',
+  'apiErrors.shareNotPositive': 'Share for participant {participantId} must be greater than 0, got {share}',
+  'apiErrors.participantHasPaidReceipts':
+    'Participant {participantId} has paid for one or more receipts and cannot be deleted (would corrupt payment history)',
+  'apiErrors.participantHasAssignments':
+    'Participant {participantId} has one or more item assignments and cannot be deleted (would corrupt consumption history)',
+  'apiErrors.receiptNoImage': 'Receipt {receiptId} has no stored image; use manual item capture instead.',
+  'apiErrors.uploadedFileEmpty': 'Uploaded file is empty',
+  'apiErrors.extraction.unsupportedFormat':
+    'This file format is not supported by automatic extraction (supported: JPEG, PNG, WEBP, GIF). Please use manual item capture.',
+  'apiErrors.extraction.unreadableImage':
+    "Could not read receipt image at '{path}'. Please retry with manual item capture.",
+  'apiErrors.extraction.timeout':
+    'The receipt extraction service took too long to respond. Try again, or use manual item capture.',
+  'apiErrors.extraction.unavailable':
+    'The receipt extraction service is unavailable right now. Please use manual item capture.',
+  'apiErrors.extraction.emptyResponse':
+    'The receipt extraction service returned an empty response. Please use manual item capture.',
+  'apiErrors.extraction.unreadableResponse':
+    'The receipt extraction service returned an unreadable response. Please use manual item capture.',
+  'apiErrors.extraction.unexpectedFormat':
+    'The receipt extraction service returned data in an unexpected format. Please use manual item capture.',
+  'apiErrors.extraction.imageNotFound':
+    "Receipt image not found at '{path}'. Please use manual item capture.",
+
+  // Backend-originated warnings (vision.py's ExtractionResult.warnings[], via
+  // the extraction proposal endpoint).
+  'apiWarnings.itemsSumOverTotal':
+    'Item prices sum to more than the receipt total ({itemsSum} > {receiptTotal}); please double-check the amounts before saving.',
+  'apiWarnings.itemsSumUnderTotal':
+    'Item prices sum to much less than the receipt total ({itemsSum} vs {receiptTotal}); some line items may be missing.',
 };

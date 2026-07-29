@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { addItems } from '../api.js';
 import StatusMessage from './StatusMessage.jsx';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function ItemForm({ receiptId, onItemAdded }) {
   const { t } = useTranslation();
@@ -58,7 +59,7 @@ function ItemForm({ receiptId, onItemAdded }) {
       <button type="submit" className="btn btn--secondary" disabled={!canSubmit}>
         {submitting ? t('itemForm.submitting') : t('itemForm.submit')}
       </button>
-      {error ? <StatusMessage kind="error">{error}</StatusMessage> : null}
+      {error ? <StatusMessage kind="error">{translateApiMessage(error, t)}</StatusMessage> : null}
     </form>
   );
 }

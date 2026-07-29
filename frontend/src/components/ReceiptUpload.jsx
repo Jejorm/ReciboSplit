@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { uploadReceipt } from '../api.js';
 import StatusMessage from './StatusMessage.jsx';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function ReceiptUpload({ eventId, participants, onUploaded }) {
   const { t } = useTranslation();
@@ -85,7 +86,7 @@ function ReceiptUpload({ eventId, participants, onUploaded }) {
       <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
         {submitting ? t('receiptUpload.submitting') : t('receiptUpload.submit')}
       </button>
-      {error ? <StatusMessage kind="error">{error}</StatusMessage> : null}
+      {error ? <StatusMessage kind="error">{translateApiMessage(error, t)}</StatusMessage> : null}
     </form>
   );
 }

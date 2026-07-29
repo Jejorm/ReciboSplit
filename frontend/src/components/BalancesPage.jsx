@@ -5,6 +5,7 @@ import StatusMessage from './StatusMessage.jsx';
 import BalanceBadge from './BalanceBadge.jsx';
 import { formatCurrency } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function BalancesPage() {
   const { t } = useTranslation();
@@ -135,7 +136,9 @@ function BalancesPage() {
       <div className="ledger-block">
         <h3 className="ledger-block__title">{t('balances.byEventTitle')}</h3>
         {loadingEvents ? <StatusMessage kind="loading">{t('balances.loadingEvents')}</StatusMessage> : null}
-        {!loadingEvents && eventsError ? <StatusMessage kind="error">{eventsError}</StatusMessage> : null}
+        {!loadingEvents && eventsError ? (
+          <StatusMessage kind="error">{translateApiMessage(eventsError, t)}</StatusMessage>
+        ) : null}
         {!loadingEvents && !eventsError && events.length === 0 ? (
           <StatusMessage kind="empty">{t('balances.noEvents')}</StatusMessage>
         ) : null}
@@ -152,7 +155,7 @@ function BalancesPage() {
 
         {loadingEventBalances ? <StatusMessage kind="loading">{t('balances.loadingEventBalances')}</StatusMessage> : null}
         {!loadingEventBalances && eventBalancesError ? (
-          <StatusMessage kind="error">{eventBalancesError}</StatusMessage>
+          <StatusMessage kind="error">{translateApiMessage(eventBalancesError, t)}</StatusMessage>
         ) : null}
         {!loadingEventBalances && !eventBalancesError && selectedEventId !== '' && eventBalances.length === 0 ? (
           <StatusMessage kind="empty">{t('balances.noEventBalances')}</StatusMessage>
@@ -191,7 +194,9 @@ function BalancesPage() {
           </button>
         </div>
         {loadingOverall ? <StatusMessage kind="loading">{t('balances.loadingOverall')}</StatusMessage> : null}
-        {!loadingOverall && overallError ? <StatusMessage kind="error">{overallError}</StatusMessage> : null}
+        {!loadingOverall && overallError ? (
+          <StatusMessage kind="error">{translateApiMessage(overallError, t)}</StatusMessage>
+        ) : null}
         {!loadingOverall && !overallError && overallBalances.length === 0 ? (
           <StatusMessage kind="empty">{t('balances.nothingToSettle')}</StatusMessage>
         ) : null}
@@ -233,7 +238,7 @@ function BalancesPage() {
           >
             {deletingAll ? t('balances.dangerZone.deleting') : t('balances.dangerZone.deleteButton')}
           </button>
-          {deleteAllError ? <StatusMessage kind="error">{deleteAllError}</StatusMessage> : null}
+          {deleteAllError ? <StatusMessage kind="error">{translateApiMessage(deleteAllError, t)}</StatusMessage> : null}
         </div>
       ) : null}
       {deleteAllSuccess ? <StatusMessage kind="success">{deleteAllSuccess}</StatusMessage> : null}

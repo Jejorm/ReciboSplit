@@ -7,6 +7,7 @@ import ReceiptUpload from './ReceiptUpload.jsx';
 import ReceiptDetail from './ReceiptDetail.jsx';
 import { formatCurrency, formatDate } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function EventDetail({ eventId, onBack }) {
   const { t, language } = useTranslation();
@@ -127,7 +128,7 @@ function EventDetail({ eventId, onBack }) {
         <button type="button" className="btn btn--ghost" onClick={onBack}>
           {t('eventDetail.backToEvents')}
         </button>
-        <StatusMessage kind="error">{eventError || t('eventDetail.notFound')}</StatusMessage>
+        <StatusMessage kind="error">{eventError ? translateApiMessage(eventError, t) : t('eventDetail.notFound')}</StatusMessage>
       </section>
     );
   }
@@ -174,7 +175,7 @@ function EventDetail({ eventId, onBack }) {
 
         {loadingParticipants ? <StatusMessage kind="loading">{t('eventDetail.loadingParticipants')}</StatusMessage> : null}
         {!loadingParticipants && participantsError ? (
-          <StatusMessage kind="error">{participantsError}</StatusMessage>
+          <StatusMessage kind="error">{translateApiMessage(participantsError, t)}</StatusMessage>
         ) : null}
 
         {!loadingParticipants && !participantsError ? (
@@ -201,7 +202,9 @@ function EventDetail({ eventId, onBack }) {
             >
               {addingParticipant ? t('eventDetail.addingParticipant') : t('eventDetail.addToEvent')}
             </button>
-            {addParticipantError ? <StatusMessage kind="error">{addParticipantError}</StatusMessage> : null}
+            {addParticipantError ? (
+              <StatusMessage kind="error">{translateApiMessage(addParticipantError, t)}</StatusMessage>
+            ) : null}
             {availableParticipants.length === 0 && allParticipants.length > 0 ? (
               <StatusMessage kind="empty">{t('eventDetail.everyoneLinked')}</StatusMessage>
             ) : null}
@@ -217,7 +220,9 @@ function EventDetail({ eventId, onBack }) {
       <div className="ledger-block">
         <h3 className="ledger-block__title">{t('eventDetail.receiptsTitle')}</h3>
         {loadingReceipts ? <StatusMessage kind="loading">{t('eventDetail.loadingReceipts')}</StatusMessage> : null}
-        {!loadingReceipts && receiptsError ? <StatusMessage kind="error">{receiptsError}</StatusMessage> : null}
+        {!loadingReceipts && receiptsError ? (
+          <StatusMessage kind="error">{translateApiMessage(receiptsError, t)}</StatusMessage>
+        ) : null}
         {!loadingReceipts && !receiptsError && receipts.length === 0 ? (
           <StatusMessage kind="empty">{t('eventDetail.noReceipts')}</StatusMessage>
         ) : null}

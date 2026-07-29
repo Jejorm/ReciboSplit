@@ -5,6 +5,7 @@ import StatusMessage from './StatusMessage.jsx';
 import EventDetail from './EventDetail.jsx';
 import { formatDate, toTitleCase } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function EventsPage() {
   const { t, language } = useTranslation();
@@ -116,11 +117,11 @@ function EventsPage() {
         <button type="submit" className="btn btn--primary" disabled={submitting || name.trim() === ''}>
           {submitting ? t('events.form.submitting') : t('events.form.submit')}
         </button>
-        {submitError ? <StatusMessage kind="error">{submitError}</StatusMessage> : null}
+        {submitError ? <StatusMessage kind="error">{translateApiMessage(submitError, t)}</StatusMessage> : null}
       </form>
 
       {loading ? <StatusMessage kind="loading">{t('events.loading')}</StatusMessage> : null}
-      {!loading && loadError ? <StatusMessage kind="error">{loadError}</StatusMessage> : null}
+      {!loading && loadError ? <StatusMessage kind="error">{translateApiMessage(loadError, t)}</StatusMessage> : null}
       {!loading && !loadError && events.length === 0 ? (
         <StatusMessage kind="empty">{t('events.empty')}</StatusMessage>
       ) : null}
@@ -147,7 +148,7 @@ function EventsPage() {
           ))}
         </ul>
       ) : null}
-      {deleteError ? <StatusMessage kind="error">{deleteError}</StatusMessage> : null}
+      {deleteError ? <StatusMessage kind="error">{translateApiMessage(deleteError, t)}</StatusMessage> : null}
     </section>
   );
 }

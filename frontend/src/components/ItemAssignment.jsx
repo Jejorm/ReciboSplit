@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { setItemAssignments } from '../api.js';
 import StatusMessage from './StatusMessage.jsx';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function buildInitialShares(item) {
   const map = new Map();
@@ -114,7 +115,7 @@ function ItemAssignment({ item, eventParticipants, onSaved }) {
           {t('itemAssignment.mismatch', { total: totalShare.toFixed(4) })}
         </StatusMessage>
       ) : null}
-      {error ? <StatusMessage kind="error">{error}</StatusMessage> : null}
+      {error ? <StatusMessage kind="error">{translateApiMessage(error, t)}</StatusMessage> : null}
     </div>
   );
 }

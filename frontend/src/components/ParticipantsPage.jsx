@@ -4,6 +4,7 @@ import { createParticipant, deleteParticipant, getParticipants } from '../api.js
 import StatusMessage from './StatusMessage.jsx';
 import { formatDate, toTitleCase } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function ParticipantsPage() {
   const { t, language } = useTranslation();
@@ -104,11 +105,11 @@ function ParticipantsPage() {
         <button type="submit" className="btn btn--primary" disabled={submitting || name.trim() === ''}>
           {submitting ? t('participants.form.submitting') : t('participants.form.submit')}
         </button>
-        {submitError ? <StatusMessage kind="error">{submitError}</StatusMessage> : null}
+        {submitError ? <StatusMessage kind="error">{translateApiMessage(submitError, t)}</StatusMessage> : null}
       </form>
 
       {loading ? <StatusMessage kind="loading">{t('participants.loading')}</StatusMessage> : null}
-      {!loading && loadError ? <StatusMessage kind="error">{loadError}</StatusMessage> : null}
+      {!loading && loadError ? <StatusMessage kind="error">{translateApiMessage(loadError, t)}</StatusMessage> : null}
       {!loading && !loadError && participants.length === 0 ? (
         <StatusMessage kind="empty">{t('participants.empty')}</StatusMessage>
       ) : null}
@@ -133,7 +134,7 @@ function ParticipantsPage() {
           ))}
         </ul>
       ) : null}
-      {deleteError ? <StatusMessage kind="error">{deleteError}</StatusMessage> : null}
+      {deleteError ? <StatusMessage kind="error">{translateApiMessage(deleteError, t)}</StatusMessage> : null}
     </section>
   );
 }

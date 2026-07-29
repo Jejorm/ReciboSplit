@@ -6,6 +6,7 @@ import { extractReceiptItems, addItems } from '../api.js';
 import StatusMessage from './StatusMessage.jsx';
 import { formatCurrency } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function makeRowId() {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -98,7 +99,7 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
         </button>
         {error ? (
           <>
-            <StatusMessage kind="error">{error}</StatusMessage>
+            <StatusMessage kind="error">{translateApiMessage(error, t)}</StatusMessage>
             <p className="page__hint">{t('extraction.manualFallbackHint')}</p>
           </>
         ) : null}
@@ -127,7 +128,7 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
 
       {warnings.map((warning, index) => (
         <p key={index} className="receipt-hint receipt-hint--mismatch">
-          {warning}
+          {translateApiMessage(warning, t)}
         </p>
       ))}
 
@@ -204,7 +205,7 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
 
       {error ? (
         <>
-          <StatusMessage kind="error">{error}</StatusMessage>
+          <StatusMessage kind="error">{translateApiMessage(error, t)}</StatusMessage>
           <p className="page__hint">{t('extraction.partialSaveHint')}</p>
         </>
       ) : null}

@@ -183,4 +183,49 @@ export default {
   'balanceBadge.owed': 'le deben {amount}',
   'balanceBadge.owes': 'debe {amount}',
   'balanceBadge.settled': 'saldado',
+
+  // Backend-originated error messages (translated on the frontend only — see
+  // i18n/apiMessages.js for the matcher that maps a raw `detail` string onto
+  // one of these keys). Neutral, professional Spanish — no voseo.
+  'apiErrors.eventNotFound': 'El evento {id} no existe',
+  'apiErrors.participantNotFound': 'El participante {id} no existe',
+  'apiErrors.itemNotFound': 'El ítem {id} no existe',
+  'apiErrors.receiptNotFound': 'El recibo {id} no existe',
+  'apiErrors.payerNotInEvent':
+    'El participante {participantId} no es participante del evento {eventId}; agréguelo primero mediante add_participant_to_event()',
+  'apiErrors.assigneeNotInEvent':
+    'El participante {participantId} no es participante del evento {eventId}; no se le puede asignar el ítem {itemId}',
+  'apiErrors.sharesSumMismatch': 'Las partes de la asignación del ítem deben sumar 1.0; suman {total}',
+  'apiErrors.assignmentRequired': 'Se requiere al menos una asignación para el ítem {itemId}',
+  'apiErrors.duplicateParticipants': 'Hay ids de participantes duplicados en las asignaciones del ítem {itemId}',
+  'apiErrors.shareNotPositive': 'La parte del participante {participantId} debe ser mayor que 0; es {share}',
+  'apiErrors.participantHasPaidReceipts':
+    'El participante {participantId} pagó uno o más recibos y no se puede eliminar (corrompería el historial de pagos)',
+  'apiErrors.participantHasAssignments':
+    'El participante {participantId} tiene una o más asignaciones de ítems y no se puede eliminar (corrompería el historial de consumo)',
+  'apiErrors.receiptNoImage': 'El recibo {receiptId} no tiene una imagen almacenada; utilice la captura manual de ítems.',
+  'apiErrors.uploadedFileEmpty': 'El archivo subido está vacío',
+  'apiErrors.extraction.unsupportedFormat':
+    'Este formato de archivo no es compatible con la extracción automática (formatos admitidos: JPEG, PNG, WEBP, GIF). Utilice la captura manual de ítems.',
+  'apiErrors.extraction.unreadableImage':
+    "No se pudo leer la imagen del recibo en '{path}'. Vuelva a intentarlo con la captura manual de ítems.",
+  'apiErrors.extraction.timeout':
+    'El servicio de extracción de recibos tardó demasiado en responder. Inténtelo de nuevo o utilice la captura manual de ítems.',
+  'apiErrors.extraction.unavailable':
+    'El servicio de extracción de recibos no está disponible en este momento. Utilice la captura manual de ítems.',
+  'apiErrors.extraction.emptyResponse':
+    'El servicio de extracción de recibos devolvió una respuesta vacía. Utilice la captura manual de ítems.',
+  'apiErrors.extraction.unreadableResponse':
+    'El servicio de extracción de recibos devolvió una respuesta ilegible. Utilice la captura manual de ítems.',
+  'apiErrors.extraction.unexpectedFormat':
+    'El servicio de extracción de recibos devolvió datos en un formato inesperado. Utilice la captura manual de ítems.',
+  'apiErrors.extraction.imageNotFound':
+    "No se encontró la imagen del recibo en '{path}'. Utilice la captura manual de ítems.",
+
+  // Backend-originated warnings (vision.py's ExtractionResult.warnings[], via
+  // the extraction proposal endpoint).
+  'apiWarnings.itemsSumOverTotal':
+    'La suma de los precios de los ítems supera el total del recibo ({itemsSum} > {receiptTotal}); verifique los montos antes de guardar.',
+  'apiWarnings.itemsSumUnderTotal':
+    'La suma de los precios de los ítems es muy inferior al total del recibo ({itemsSum} vs {receiptTotal}); es posible que falten ítems.',
 };

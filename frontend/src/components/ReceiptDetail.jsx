@@ -7,6 +7,7 @@ import ItemForm from './ItemForm.jsx';
 import ItemList from './ItemList.jsx';
 import { formatCurrency } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
+import { translateApiMessage } from '../i18n/apiMessages.js';
 
 function ReceiptDetail({ receiptId, eventParticipants, fallbackTotal, onBack }) {
   const { t } = useTranslation();
@@ -59,7 +60,7 @@ function ReceiptDetail({ receiptId, eventParticipants, fallbackTotal, onBack }) 
         <button type="button" className="btn btn--ghost" onClick={onBack}>
           {t('receiptDetail.backToEvent')}
         </button>
-        <StatusMessage kind="error">{error || t('receiptDetail.notFound')}</StatusMessage>
+        <StatusMessage kind="error">{error ? translateApiMessage(error, t) : t('receiptDetail.notFound')}</StatusMessage>
       </section>
     );
   }
