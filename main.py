@@ -4,6 +4,7 @@ image upload, manual item capture, item assignments, and balance reads.
 Endpoints call db.py functions only — no SQL is written here.
 """
 
+import os
 from contextlib import asynccontextmanager
 from typing import Annotated, AsyncIterator, Optional, Union
 
@@ -26,10 +27,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="ReciboSplit API", lifespan=lifespan)
 
-# CORS: the React frontend (Vite dev server) calls this API cross-origin.
+# CORS: the React frontend calls this API cross-origin. Local dev origins are
+# always allowed; the deployed Cloudflare Pages origin is added via the
+# FRONTEND_ORIGIN env var (set in Render) so this doesn't need a code change
+# per environment.
+_default_origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+_frontend_origin = os.environ.get("FRONTEND_ORIGIN")
+_allowed_origins = _default_origins + [_frontend_origin] if _frontend_origin else _default_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

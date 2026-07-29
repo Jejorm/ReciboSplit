@@ -1,6 +1,6 @@
 // Centralized fetch client for the ReciboSplit API. Every network call goes through here.
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 async function handleResponse(response) {
   const text = await response.text();

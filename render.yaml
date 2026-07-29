@@ -1,0 +1,35 @@
+# Render Blueprint for the ReciboSplit FastAPI backend (free tier).
+# Deploy: connect this repo in the Render dashboard and it will detect this
+# file automatically ("New +" -> "Blueprint"), or run `render blueprint launch`.
+#
+# Frontend (Cloudflare Pages) and database (Turso) are NOT managed here —
+# Turso already exists and just needs its credentials wired in as env vars
+# below; Cloudflare Pages deploys separately from frontend/.
+#
+# Note: the free plan's filesystem is ephemeral — files written under
+# uploads/ (see services.py) will NOT survive a restart/redeploy. Fine for
+# an initial free deployment; revisit with a persistent disk or object
+# storage if receipt images need to survive restarts.
+services:
+  - type: web
+    name: recibosplit-api
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      # Turso (libSQL) credentials — same database already in use, see db.py.
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      # OpenAI vision extraction (Phase 2) — see vision.py. Read implicitly
+      # by the `openai` SDK's OpenAI() client via this exact env var name.
+      - key: OPENAI_API_KEY
+        sync: false
+      # Cloudflare Pages frontend origin, for CORS (see main.py). Set this
+      # to the deployed Pages URL, e.g. https://recibosplit.pages.dev
+      - key: FRONTEND_ORIGIN
+        sync: false
