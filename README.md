@@ -1,8 +1,8 @@
 # ReciboSplit
 
-Split group expenses from a receipt photo — like Splitwise, but self-hosted. Upload a receipt image, type in each line item, assign items to the people who consumed them, and the app tracks who owes whom across multiple events. It also ships as an MCP server, so you can ask Claude Code questions like "who owes what?" in plain language.
+Split group expenses from a receipt photo — like Splitwise, but self-hosted. Upload a receipt image and either let OpenAI's vision API read the items for you (editable before saving) or type them in manually, assign items to the people who consumed them, and the app tracks who owes whom across multiple events. It also ships as an MCP server, so you can ask Claude Code questions like "who owes what?" in plain language.
 
-**Stack:** FastAPI (Python) · Turso (SQLite-compatible cloud DB) · React + Vite · MCP.
+**Stack:** FastAPI (Python) · Turso (SQLite-compatible cloud DB) · React + Vite · OpenAI vision API · MCP.
 
 ## Quick path
 
@@ -26,6 +26,7 @@ Open http://localhost:5173 and you're in. First time here? Do the setup below on
 | Node.js 20+ | Frontend (Vite + React) | `brew install node` |
 | [Turso CLI](https://docs.turso.tech/cli) | Create the cloud database | `brew install tursodatabase/tap/turso` |
 | A Turso account | Free tier is enough | created during `turso auth login` |
+| An OpenAI API key | Powers automatic receipt-item extraction (optional — manual capture works without it) | created at [platform.openai.com](https://platform.openai.com) |
 
 ## One-time setup
 
@@ -49,7 +50,10 @@ Put both values in a file named `.env` in the project root (never commit it — 
 ```
 TURSO_DATABASE_URL=libsql://recibosplit-YOURNAME.turso.io
 TURSO_AUTH_TOKEN=eyJhbGciOi...
+OPENAI_API_KEY=sk-...
 ```
+
+`OPENAI_API_KEY` is optional — without it, the "Extract items from photo" button fails cleanly and manual item capture still works end to end.
 
 ### 3. Install backend dependencies
 
@@ -78,9 +82,13 @@ Seeds three participants (Ana, Bruno, Carla) and two events with receipts, items
 | --- | --- | --- |
 | Backend API | `.venv/bin/uvicorn main:app --port 8000` | http://localhost:8000 (docs at `/docs`) |
 | Frontend | `cd frontend && npm run dev` | http://localhost:5173 |
-| Tests | `.venv/bin/python -m pytest tests/` | terminal (44 tests, fully offline) |
+| Tests | `.venv/bin/python -m pytest tests/` | terminal (90 tests, fully offline — OpenAI is always mocked, never called) |
 
-The flow in the UI: **Participants** (create people) → **Events** (create an event, add its participants, upload a receipt, capture items, assign each item) → **Balances** (per event and overall — black means owed, red means owes).
+The flow in the UI: **Participants** (create people) → **Events** (create an event, add its participants, upload a receipt, extract items automatically or capture them manually, assign each item) → **Balances** (per event and overall — black means owed, red means owes). Participants, events, and all data can also be deleted from the UI (a participant with financial history is protected from deletion). A globe icon in the header switches the whole UI between English and Spanish.
+
+## Automatic receipt extraction
+
+On a receipt's detail page, "Extract items from photo" sends the uploaded image to OpenAI's vision API (`gpt-5.6-luna`) and shows the proposed items — description, price, quantity — in an editable table alongside the extraction's own total, plus any warnings (e.g. items summing to noticeably less/more than the receipt total). Nothing is saved until you review it and click "Add N items to receipt", which goes through the exact same save path as manual capture. If extraction fails for any reason (no API key, unreadable image, unsupported format, API timeout, malformed response), you get a clear message and manual capture below keeps working — extraction never blocks it.
 
 ## Asking questions from Claude Code (MCP)
 
@@ -98,6 +106,7 @@ It answers from live database data. Note: the **very first query after a fresh c
 ├── db.py               # All database access (connection, queries, sync)
 ├── services.py         # File storage + error mapping helpers
 ├── mcp_server.py       # Read-only MCP server for Claude Code
+├── vision.py           # OpenAI vision extraction — Pydantic contract, prompt, error handling
 ├── schema.sql          # Source of truth for tables and balance views
 ├── seed_test_data.py   # Demo data loader (idempotent)
 ├── tests/              # Offline pytest suite (temp DB per test)
@@ -122,11 +131,10 @@ Two design rules worth knowing before touching code:
 | App starts but hangs on first request | No network — Turso sync waits forever instead of failing | Check your connection and `.env` credentials |
 | Browser console shows CORS errors | Frontend served from an unexpected origin | Use `npm run dev` (port 5173) — that origin is allowlisted in `main.py` |
 
-## Out of scope (Phase 1)
+## Out of scope
 
-- Automatic item/price recognition from the receipt photo (needs a vision model — planned as Phase 2).
 - Debt simplification ("who pays whom directly" instead of net balances).
 
 ## How this was built
 
-An educational project driven from Claude Code: a Fable 5 orchestrator session plans and reviews, while subagents in `.claude/agents/` (db-agent, api-agent, ui-agent, test-agent on Sonnet 5) write the code — one feature per day over a week. The full build log, day-by-day decisions, and the Phase 1 acceptance checklist live in [PROJECT_STATUS.md](PROJECT_STATUS.md).
+An educational project driven from Claude Code: an orchestrator session plans and reviews, while subagents in `.claude/agents/` (db-agent, api-agent, ui-agent, test-agent, and vision-agent for the OpenAI extraction layer, all on Sonnet 5) write the code. The full build log, task-by-task decisions, and both phases' acceptance checklists live in [PROJECT_STATUS.md](PROJECT_STATUS.md).
