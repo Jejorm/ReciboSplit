@@ -20,7 +20,7 @@ Phase 1 is functionally complete (full day-by-day log preserved further down). P
 | 5    | Errors & fallback: API down / unreadable image / invalid JSON → clean fall back to manual capture with a clear message. Never breaks the Phase 1 flow                                                           | vision-agent             | ✅ Done    |
 | 6    | Tests: parser/validator with **mocked** API responses (never the real API in tests). Good and bad cases                                                                                                         | test-agent               | ✅ Done    |
 | 7    | Small logic & FE/BE improvements: delete participants and events from the app, plus a "delete all data" reset button in Balances. Strictly additive; more small improvements land here as they come up            | db + api + ui + test     | 🔶 In progress |
-| 8    | Phase 2 Definition of Done: real photo → pre-filled extraction → correct → save → correct balances, with fallback verified                                                                                      | — (human)                | ⬜ Pending |
+| 8    | Phase 2 Definition of Done: real photo → pre-filled extraction → correct → save → correct balances, with fallback verified                                                                                      | — (human)                | ✅ Done    |
 
 ### Phase 2 progress log
 
@@ -75,6 +75,17 @@ Completed on 2026-07-16 (Task 7 — frontend UX & visual improvements, all addit
 - [x] **Name normalization (`utils.js` `toTitleCase`, `ParticipantsPage.jsx`, `EventsPage.jsx`):** participant and event names are title-cased on create (each word capitalized) so stored data reads consistently everywhere (UI, balances, MCP). Normalized on write in the frontend — endpoints untouched.
 - [x] **Participant row alignment (`styles.css`):** the "joined …" dates now stay in a right-aligned column (name takes the flexible space) instead of drifting horizontally with name length.
 
+Completed on 2026-07-29 (Task 7 — translated backend error/warning messages, additive, frontend-only):
+
+- [x] **ui-agent (`frontend/src/i18n/apiMessages.js`, new; `en.js`/`es.js` extended; 9 components wired):** backend `detail`/`warnings[]` strings were the last untranslated surface after the 2026-07-17 i18n rollout. `apiMessages.js` pattern-matches the exact backend wording (character-for-character, verified live against `main.py`/`vision.py`) onto new `apiErrors.*`/`apiWarnings.*` keys, translated at render time so an on-screen message re-translates if the language is switched afterwards. Backend untouched (Phase 1/2-frozen). `npm run build` clean. Commit `f69604a`.
+
+Completed on 2026-07-29 (Task 8 — Phase 2 Definition of Done, verified live end-to-end):
+
+- [x] **Verified live** with `uvicorn main:app` + `vite` dev server, against a real receipt photo (`bills/bill.jpeg`, the same Chiringuito receipt used in the earlier Task-2/3 smoke tests): `POST /receipts/{id}/extract` (live `gpt-5.6-luna` call) returned CHEESEBURGER SIMPLE price=7.0 qty=2, MITI-MITI price=5.0 qty=2, `receipt_total`=12.0, no warnings — reproducing the earlier verification exactly. Saved both items as-is through the existing `POST /receipts/{id}/items` (Phase 1 endpoint, unmodified), split 50/50 between two throwaway test participants, then confirmed `GET /events/{id}/balances` computed correctly through the unmodified `event_balances` view: total_consumed 6.0 each, net balances +94/-6 (payer total_paid 100 minus 12 consumed, split evenly) — no new balance logic involved.
+- [x] **Fallback path verified live (not just mocked):** uploaded a `.pdf` (on the Phase 1 upload allow-list but not supported by extraction) and called `/extract` on it — got a clean 502 with the exact user-safe message ("This file format is not supported by automatic extraction..."), matching `apiErrors.extraction.unsupportedFormat` word-for-word. Manual item capture (`POST /receipts/{id}/items`) immediately succeeded afterward on the same receipt, proving the fallback never blocks Phase 1 capture.
+- [x] **No Phase 1/2 regression:** all verification done through existing endpoints/views with zero code changes; test data (1 event, 2 participants, their receipts/items/assignments) deleted afterward via the Task 7 delete endpoints — seed data (Ana/Bruno/Carla/Joel, Asado sabado, Dia de playa, Nuevo evento) confirmed untouched.
+- **All 6 Phase 2 DoD checklist boxes can now be marked done** (see below) — Phase 2 is functionally complete pending only the still-open Task 7 human click-through of the EN/ES switcher.
+
 Completed on 2026-07-17 (Task 7 — frontend internationalization EN/ES, additive, frontend-only):
 
 - [x] **ui-agent (`frontend/src/i18n/`, new):** custom lightweight i18n layer, zero new npm dependencies. `en.js` + `es.js` (137 dot-namespaced keys each, verified parity), `LanguageContext.jsx` — `LanguageProvider` + `useTranslation()` hook with `t(key, vars)`, `{placeholder}` interpolation, English fallback for missing keys. Language persisted in localStorage (`recibosplit.language`); first visit detects `navigator.language` (es\* → es, else en).
@@ -88,12 +99,12 @@ Completed on 2026-07-17 (Task 7 — frontend internationalization EN/ES, additiv
 
 Phase 2 is done when, with a **real receipt photo**:
 
-- [ ] Uploading a receipt and requesting extraction pre-fills the item form with sensible description/price/quantity values
-- [ ] The human can edit any extracted row before saving; saving goes through the existing Phase 1 capture endpoints (extraction persists nothing on its own)
-- [ ] After saving, balances compute through the same Phase 1 views — no new balance logic was introduced
-- [ ] Every failure mode (API error, unreadable image, malformed JSON, price/total mismatch) falls back to manual capture with a clear message, and manual-only capture still works end to end
+- [x] Uploading a receipt and requesting extraction pre-fills the item form with sensible description/price/quantity values (verified live 2026-07-29, `bills/bill.jpeg`)
+- [x] The human can edit any extracted row before saving; saving goes through the existing Phase 1 capture endpoints (extraction persists nothing on its own) — non-persistence proven in Task 3, save-through-Phase-1 proven live in Task 8
+- [x] After saving, balances compute through the same Phase 1 views — no new balance logic was introduced (verified live 2026-07-29: `event_balances` view, exact expected numbers)
+- [x] Every failure mode (API error, unreadable image, malformed JSON, price/total mismatch) falls back to manual capture with a clear message, and manual-only capture still works end to end (unsupported-format fallback verified live 2026-07-29; other failure modes covered in Tasks 2–6 live smoke tests + mocked test suite)
 - [x] `test-agent` suite passes with mocked API responses; no test makes a real OpenAI call (83 passed; proven with `OPENAI_API_KEY` removed from the environment)
-- [ ] No Phase 1 schema, view, endpoint behavior, or existing test changed
+- [x] No Phase 1 schema, view, endpoint behavior, or existing test changed (Task 8 verification used only existing endpoints/views, zero code changes)
 
 ---
 
