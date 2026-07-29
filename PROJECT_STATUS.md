@@ -2,11 +2,14 @@
 
 Current status of ReciboSplit. Update this at the end of every work session.
 
-## Current phase: PHASE 2 — Automatic receipt recognition (OpenAI vision)
+## PROJECT COMPLETE — Phase 1 + Phase 2 both done
 
-Phase 1 is functionally complete (full day-by-day log preserved further down). Phase 2 adds vision-based extraction as a **strictly additive** layer: it pre-fills the existing manual item-capture form and never replaces it. Manual capture must keep working if extraction is skipped or fails.
+Phase 1 (manual capture, full day-by-day log preserved further down) and Phase 2 (automatic receipt recognition via OpenAI vision, strictly additive to Phase 1) are both functionally complete. Every Definition-of-Done item in both checklists is verified, including the two human-only checks:
 
-**Inherited from Phase 1 — still open, needs a human:** the live MCP chat test (restart Claude Code here, approve the `recibosplit` server, ask "¿cuánto debe cada quien en total?"). Don't let this get lost under Phase 2.
+- **Live MCP chat test** (asking the `recibosplit` server a balance question from inside Claude Code) — confirmed done by the user on 2026-07-29.
+- **EN/ES language-switcher click-through** (Phase 2 Task 7) — confirmed done by the user on 2026-07-29.
+
+Any new work from here starts a new phase/feature on top of a finished app.
 
 ### Phase 2 task plan
 
@@ -19,7 +22,7 @@ Phase 1 is functionally complete (full day-by-day log preserved further down). P
 | 4    | Frontend: extracted items **pre-fill** the existing `ItemCapture` form; 100% manual capture stays available                                                                                                     | ui-agent                 | ✅ Done    |
 | 5    | Errors & fallback: API down / unreadable image / invalid JSON → clean fall back to manual capture with a clear message. Never breaks the Phase 1 flow                                                           | vision-agent             | ✅ Done    |
 | 6    | Tests: parser/validator with **mocked** API responses (never the real API in tests). Good and bad cases                                                                                                         | test-agent               | ✅ Done    |
-| 7    | Small logic & FE/BE improvements: delete participants and events from the app, plus a "delete all data" reset button in Balances. Strictly additive; more small improvements land here as they come up            | db + api + ui + test     | 🔶 In progress |
+| 7    | Small logic & FE/BE improvements: delete participants and events from the app, plus a "delete all data" reset button in Balances. Strictly additive; more small improvements land here as they come up            | db + api + ui + test     | ✅ Done    |
 | 8    | Phase 2 Definition of Done: real photo → pre-filled extraction → correct → save → correct balances, with fallback verified                                                                                      | — (human)                | ✅ Done    |
 
 ### Phase 2 progress log
@@ -84,7 +87,9 @@ Completed on 2026-07-29 (Task 8 — Phase 2 Definition of Done, verified live en
 - [x] **Verified live** with `uvicorn main:app` + `vite` dev server, against a real receipt photo (`bills/bill.jpeg`, the same Chiringuito receipt used in the earlier Task-2/3 smoke tests): `POST /receipts/{id}/extract` (live `gpt-5.6-luna` call) returned CHEESEBURGER SIMPLE price=7.0 qty=2, MITI-MITI price=5.0 qty=2, `receipt_total`=12.0, no warnings — reproducing the earlier verification exactly. Saved both items as-is through the existing `POST /receipts/{id}/items` (Phase 1 endpoint, unmodified), split 50/50 between two throwaway test participants, then confirmed `GET /events/{id}/balances` computed correctly through the unmodified `event_balances` view: total_consumed 6.0 each, net balances +94/-6 (payer total_paid 100 minus 12 consumed, split evenly) — no new balance logic involved.
 - [x] **Fallback path verified live (not just mocked):** uploaded a `.pdf` (on the Phase 1 upload allow-list but not supported by extraction) and called `/extract` on it — got a clean 502 with the exact user-safe message ("This file format is not supported by automatic extraction..."), matching `apiErrors.extraction.unsupportedFormat` word-for-word. Manual item capture (`POST /receipts/{id}/items`) immediately succeeded afterward on the same receipt, proving the fallback never blocks Phase 1 capture.
 - [x] **No Phase 1/2 regression:** all verification done through existing endpoints/views with zero code changes; test data (1 event, 2 participants, their receipts/items/assignments) deleted afterward via the Task 7 delete endpoints — seed data (Ana/Bruno/Carla/Joel, Asado sabado, Dia de playa, Nuevo evento) confirmed untouched.
-- **All 6 Phase 2 DoD checklist boxes can now be marked done** (see below) — Phase 2 is functionally complete pending only the still-open Task 7 human click-through of the EN/ES switcher.
+- **All 6 Phase 2 DoD checklist boxes can now be marked done** (see below). Phase 2 is functionally complete.
+
+Confirmed by the user on 2026-07-29: both remaining human-only checks are done — the Task 7 EN/ES switcher click-through, and the inherited Phase 1 live MCP chat test ("¿cuánto debe cada quien en total?" from inside Claude Code). **The application is now complete end to end.**
 
 Completed on 2026-07-17 (Task 7 — frontend internationalization EN/ES, additive, frontend-only):
 
@@ -92,7 +97,7 @@ Completed on 2026-07-17 (Task 7 — frontend internationalization EN/ES, additiv
 - [x] **Language switcher (`App.jsx`):** globe-icon toggle button (inline SVG) in the header showing EN/ES, translated `aria-label`/`title`, styled to the fintech design (`.language-switcher` in `styles.css`).
 - [x] **All 13 components externalized** — every user-facing string, `window.confirm()` dialog, placeholder, and `aria-label` goes through `t()`; `formatDate(value, language)` localizes dates (en-US / es-ES). Backend-originated messages (API error `detail`, extraction `warnings[]`) are deliberately shown as-is, untranslated — translating them would touch Phase 1 endpoint behavior. Spanish register: neutral "tú", no regional slang.
 - [x] **Fresh-context adversarial review:** commit-ready, zero confirmed defects (key parity, all `t()` call sites incl. dynamic keys, interpolation vars in both dictionaries, confirm guards, aria wiring, no logic drift, `npm run build` clean re-verified by the reviewer).
-- [ ] **Pending human check:** visual click-through of the switcher (toggle EN↔ES across all tabs).
+- [x] **Human check confirmed 2026-07-29:** visual click-through of the switcher (toggle EN↔ES across all tabs).
 - **INCIDENT (resolved 2026-07-17):** the working copy had lost `.git`, `.gitignore`, and `.mcp.json` (folder copied/recreated dropping dotfiles). The user confirmed the old history is unrecoverable. Repository reinitialized: `.gitignore` recreated first (protects `.env`, `recibosplit.db*`, `recibosplit_mcp.db*`, `uploads/`, venv/node_modules/build dirs), `.mcp.json` recreated with the documented absolute paths (venv python verified), then root commit `cb7e5db` snapshotting the full project including the i18n work. Old commit hashes referenced earlier in this file no longer exist. **No remote is configured — until one is added, this repo has a single point of failure again.**
 
 ### Phase 2 Definition of Done
@@ -189,7 +194,7 @@ Completed on Day 0, before writing application code:
 - [x] `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` saved in `.env`
 - [x] Connection verified with `verify_connection.py` — all 6 tables + 2 views confirmed synced locally
 
-## Week plan complete. Two Definition-of-Done items need a human (see checklist): the UI click-through and the live MCP chat test (restart Claude Code in this project, approve the `recibosplit` server, ask "¿cuánto debe cada quien en total?").
+## Week plan complete. Both human-only Definition-of-Done items (UI click-through, live MCP chat test) confirmed done.
 
 ## Week plan
 
@@ -248,7 +253,7 @@ Phase 1 is NOT done just because code exists. It's done when this specific accep
 - [x] The numbers above match exactly (down to the cent) when queried via the API (verified live on Day 5/6 and asserted in `tests/` at both the db and API layers)
 - [x] React UI: you can complete the full flow (upload image → add items → assign → view balances) without touching the database directly — verified end-to-end on 2026-07-13 with real browser automation (agent-browser): participant created via form, receipt image uploaded via the UI, item captured, assigned via even-split, balances updated correctly (Diego +25 / Elena −25 test scenario); temp data cleaned up afterwards, seed balances intact
 - [x] `test-agent`'s pytest suite passes, including edge cases (shares not summing to 1.0, participant not in event, event with no receipts) — 44 passed
-- [x] MCP server responds correctly in the Claude Code chat to a question like "¿cuánto debe cada quien en total?" — protocol path proven with an SDK stdio client on Day 6; **needs a live chat test**: restart Claude Code here, approve the `recibosplit` server, ask the question
+- [x] MCP server responds correctly in the Claude Code chat to a question like "¿cuánto debe cada quien en total?" — protocol path proven with an SDK stdio client on Day 6; **live chat test confirmed done by the user on 2026-07-29**
 - [x] `git log` shows incremental commits per day (not one giant commit at the end) — one `feat` commit per day, Day 1 through Day 7
 
 Only when every box above is checked is Phase 1 truly done — not before.

@@ -8,9 +8,9 @@ A Splitwise-style app for splitting group expenses (cookouts, group trips). Phas
 
 ## Current status
 
-Phase 1 is functionally **complete** — backend, frontend, tests (44 passed), and the MCP server are all built and verified. One inherited Phase 1 Definition-of-Done item still needs a human: a live chat test asking the `recibosplit` MCP server a balance question from inside Claude Code (don't lose this).
+**The application is complete.** Phase 1 (manual capture) and Phase 2 (automatic receipt recognition via the OpenAI vision API) are both functionally complete and verified — backend, frontend, tests (90 passed), the MCP server, and every Definition-of-Done item, including the two human-only checks (live MCP chat test, EN/ES switcher click-through), confirmed done by the user on 2026-07-29.
 
-**Phase 2 is now active:** automatic receipt recognition via the **OpenAI vision API**. It is organized as Task 0–7 (not days) in `PROJECT_STATUS.md`. Phase 2 is strictly **additive** — it must not change any Phase 1 schema, view, endpoint behavior, or test. Extraction _pre-fills_ the existing manual capture form; it never replaces it, and manual capture stays fully usable if extraction is skipped or fails.
+Any further work from here is a new feature or improvement on top of a finished app, not a continuation of Phase 1/2. See `PROJECT_STATUS.md` for the full task-by-task history.
 
 ## Stack
 
@@ -25,7 +25,7 @@ Phase 1 is functionally **complete** — backend, frontend, tests (44 passed), a
 - Turso instead of Supabase or plain SQLite: same SQLite engine, but with remote access for multiple participants.
 - No heavy ORM: explicit, parameterized SQL queries, both in `db-agent` and in any data-access code.
 - Balance calculation lives in the SQL views `event_balances` and `overall_balances` in `schema.sql` — never duplicate that logic in Python or in the frontend.
-- Automatic receipt recognition (vision/OCR) is **Phase 2**, now in progress — see the Task 0–7 plan in `PROJECT_STATUS.md`. It runs as a runtime call to the OpenAI vision API and must stay strictly additive to Phase 1.
+- Automatic receipt recognition (vision/OCR) is **Phase 2**, now complete — see the Task 0–8 history in `PROJECT_STATUS.md`. It runs as a runtime call to the OpenAI vision API and stays strictly additive to Phase 1.
 - Vision model: **gpt-5.6-luna**, chosen for cost over accuracy during this early stage (verified real via direct OpenAI API call; ~2.5x cheaper than gpt-4o). Tested against gpt-4o, gpt-5.4-nano, and gpt-5.4-mini on 4 receipt conditions (clean/blurry/angled/dark+lowres) — luna was the only one that never invented a nonexistent line item, though it can still misread a price or drop a real item under bad photo conditions. Manual review before saving remains mandatory regardless of model. Revisit only if real-user testing shows too many extraction errors — don't reopen this choice without that evidence.
 - **Two providers, two distinct roles** (do not mix them up): **Anthropic / Fable 5** is the _development_ orchestrator inside Claude Code (it writes and reviews the code). **OpenAI** is the _runtime_ vision engine the app calls to read receipt photos. The app never calls Anthropic at runtime, and Claude Code never uses OpenAI to build the project.
 
