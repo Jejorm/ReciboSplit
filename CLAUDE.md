@@ -32,12 +32,7 @@ Any further work from here is a new feature or improvement on top of a finished 
 ## How to work on this project
 
 - The main session runs on **Fable 5** (`/model fable-5`) and acts as the orchestrator: plans, decides on design, reviews what the subagents deliver.
-- Mechanical execution is delegated to subagents in `.claude/agents/`, all on **Sonnet 5**:
-  - `db-agent` — Turso schema, migrations, queries
-  - `api-agent` — FastAPI endpoints
-  - `ui-agent` — React components
-  - `test-agent` — pytest tests
-  - `vision-agent` — Phase 2 only: OpenAI vision extractor, its JSON/Pydantic contract, the extraction endpoint, and the fallback path (never persists data, never opens its own Turso connection)
+- Mechanical execution is delegated to subagents in `.claude/agents/`, all on **Sonnet 5** — see that directory for each subagent's role.
 - Before writing new code, explicitly delegate to the right subagent instead of doing it directly in the main session.
 - `schema.sql` is the source of truth for the schema. Any change is accompanied by a numbered migration in `/migrations`.
 
