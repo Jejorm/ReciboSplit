@@ -20,3 +20,13 @@ frontend/dist/
 
 # OS
 .DS_Store
+
+# Example/sample assets, not needed in the repo
+bills/
+
+# Local tooling cache/registry, not part of the project
+.atl/
+
+# One-off/throwaway scripts, superseded by production code
+verify_connection.py
+vision_extract_experiment.py
