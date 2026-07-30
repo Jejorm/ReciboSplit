@@ -9,7 +9,7 @@ import { formatCurrency } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
 import { translateApiMessage } from '../i18n/apiMessages.js';
 
-function ReceiptDetail({ receiptId, eventParticipants, fallbackTotal, onBack }) {
+function ReceiptDetail({ receiptId, eventParticipants, fallbackTotal, currency, onCurrencyConfirmed, onBack }) {
   const { t } = useTranslation();
   const [receipt, setReceipt] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -75,13 +75,13 @@ function ReceiptDetail({ receiptId, eventParticipants, fallbackTotal, onBack }) 
   const isMismatch = hasKnownTotal && Math.abs(difference) > 0.01;
 
   const reconcileDetail = t('receiptDetail.reconcile.detailBase', {
-    sum: formatCurrency(itemsSum),
-    total: formatCurrency(receiptTotal),
+    sum: formatCurrency(itemsSum, currency),
+    total: formatCurrency(receiptTotal, currency),
   });
   const reconcileSuffix = isMismatch
     ? t('receiptDetail.reconcile.mismatchSuffix', {
         direction: difference > 0 ? t('receiptDetail.reconcile.over') : t('receiptDetail.reconcile.under'),
-        amount: formatCurrency(Math.abs(difference)),
+        amount: formatCurrency(Math.abs(difference), currency),
       })
     : '.';
 
@@ -96,7 +96,12 @@ function ReceiptDetail({ receiptId, eventParticipants, fallbackTotal, onBack }) 
         <p className="page__hint">{t('receiptDetail.hint')}</p>
       </div>
 
-      <ExtractionReview receiptId={receiptId} onItemsAdded={refreshReceipt} />
+      <ExtractionReview
+        receiptId={receiptId}
+        currency={currency}
+        onCurrencyConfirmed={onCurrencyConfirmed}
+        onItemsAdded={refreshReceipt}
+      />
 
       <div className="ledger-block">
         <h3 className="ledger-block__title">{t('receiptDetail.addItemTitle')}</h3>
@@ -122,7 +127,12 @@ function ReceiptDetail({ receiptId, eventParticipants, fallbackTotal, onBack }) 
             </p>
           </div>
         ) : null}
-        <ItemList items={items} eventParticipants={eventParticipants} onAssignmentsSaved={refreshReceipt} />
+        <ItemList
+          items={items}
+          eventParticipants={eventParticipants}
+          currency={currency}
+          onAssignmentsSaved={refreshReceipt}
+        />
       </div>
     </section>
   );

@@ -125,6 +125,10 @@ function BalancesPage() {
   }
 
   const hasData = participants.length > 0 || events.length > 0;
+  const selectedEventCurrency =
+    events.find((eventItem) => String(eventItem.id) === String(selectedEventId))?.currency || 'USD';
+  const distinctCurrencies = new Set(events.map((eventItem) => eventItem.currency || 'USD'));
+  const hasMixedCurrencies = distinctCurrencies.size > 1;
 
   return (
     <section className="page">
@@ -174,10 +178,10 @@ function BalancesPage() {
               {eventBalances.map((balance) => (
                 <tr key={balance.participant_id}>
                   <td>{balance.participant_name}</td>
-                  <td>{formatCurrency(balance.total_paid)}</td>
-                  <td>{formatCurrency(balance.total_consumed)}</td>
+                  <td>{formatCurrency(balance.total_paid, selectedEventCurrency)}</td>
+                  <td>{formatCurrency(balance.total_consumed, selectedEventCurrency)}</td>
                   <td>
-                    <BalanceBadge value={balance.net_balance} />
+                    <BalanceBadge value={balance.net_balance} currency={selectedEventCurrency} />
                   </td>
                 </tr>
               ))}
@@ -193,6 +197,9 @@ function BalancesPage() {
             {t('common.refresh')}
           </button>
         </div>
+        {!loadingOverall && !overallError && hasMixedCurrencies ? (
+          <p className="page__hint">{t('balances.mixedCurrenciesHint')}</p>
+        ) : null}
         {loadingOverall ? <StatusMessage kind="loading">{t('balances.loadingOverall')}</StatusMessage> : null}
         {!loadingOverall && overallError ? (
           <StatusMessage kind="error">{translateApiMessage(overallError, t)}</StatusMessage>

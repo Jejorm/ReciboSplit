@@ -14,7 +14,7 @@ function makeRowId() {
     : `row-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
-function ExtractionReview({ receiptId, onItemsAdded }) {
+function ExtractionReview({ receiptId, currency, onCurrencyConfirmed, onItemsAdded }) {
   const { t } = useTranslation();
   const [status, setStatus] = useState('idle'); // 'idle' | 'extracting' | 'reviewing'
   const [rows, setRows] = useState([]);
@@ -23,6 +23,9 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
   const [warnings, setWarnings] = useState([]);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [detectedCurrency, setDetectedCurrency] = useState(null);
+  const [currencyBannerDismissed, setCurrencyBannerDismissed] = useState(false);
+  const [switchingCurrency, setSwitchingCurrency] = useState(false);
 
   async function handleExtract() {
     setStatus('extracting');
@@ -44,6 +47,8 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
         typeof result.tax_amount === 'number' && result.tax_amount > 0 ? result.tax_amount : null
       );
       setWarnings(result.warnings || []);
+      setDetectedCurrency(result.currency || null);
+      setCurrencyBannerDismissed(false);
       setStatus('reviewing');
     } catch (extractError) {
       setError(extractError.message);
@@ -57,8 +62,29 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
     setTaxAmount(null);
     setWarnings([]);
     setError(null);
+    setDetectedCurrency(null);
+    setCurrencyBannerDismissed(false);
     setStatus('idle');
   }
+
+  async function handleSwitchCurrency() {
+    if (!detectedCurrency) return;
+    setSwitchingCurrency(true);
+    try {
+      await onCurrencyConfirmed(detectedCurrency);
+      setCurrencyBannerDismissed(true);
+    } catch (switchError) {
+      setError(switchError.message);
+    } finally {
+      setSwitchingCurrency(false);
+    }
+  }
+
+  const showCurrencyMismatch =
+    !currencyBannerDismissed &&
+    detectedCurrency &&
+    currency &&
+    detectedCurrency.toUpperCase() !== currency.toUpperCase();
 
   function updateRow(id, field, value) {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
@@ -127,12 +153,42 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
     <div className="ledger-block">
       <h3 className="ledger-block__title">{t('extraction.reviewTitle')}</h3>
 
+      {showCurrencyMismatch ? (
+        <div className="receipt-hint receipt-hint--mismatch" role="status" aria-live="polite">
+          <p>{t('extraction.currencyMismatch', { detected: detectedCurrency, current: currency })}</p>
+          <div className="assignment-panel__actions">
+            <button
+              type="button"
+              className="btn btn--secondary btn--small"
+              onClick={handleSwitchCurrency}
+              disabled={switchingCurrency}
+            >
+              {switchingCurrency
+                ? t('extraction.currencySwitching')
+                : t('extraction.currencySwitchButton', { detected: detectedCurrency })}
+            </button>
+            <button
+              type="button"
+              className="btn btn--ghost btn--small"
+              onClick={() => setCurrencyBannerDismissed(true)}
+              disabled={switchingCurrency}
+            >
+              {t('extraction.currencyDismiss', { current: currency })}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       {receiptTotal !== null ? (
-        <p className="receipt-hint">{t('extraction.receiptTotalOnFile', { total: formatCurrency(receiptTotal) })}</p>
+        <p className="receipt-hint">
+          {t('extraction.receiptTotalOnFile', { total: formatCurrency(receiptTotal, detectedCurrency || currency) })}
+        </p>
       ) : null}
 
       {taxAmount !== null ? (
-        <p className="receipt-hint">{t('extraction.taxIncludedHint', { total: formatCurrency(taxAmount) })}</p>
+        <p className="receipt-hint">
+          {t('extraction.taxIncludedHint', { total: formatCurrency(taxAmount, detectedCurrency || currency) })}
+        </p>
       ) : null}
 
       {warnings.map((warning, index) => (

@@ -161,13 +161,18 @@ def create_participant(name: str) -> int:
     ).fetchone()[0]
 
 
-def create_event(name: str, event_date: Optional[str] = None) -> int:
+def create_event(
+    name: str, event_date: Optional[str] = None, currency: str = "USD"
+) -> int:
     """Insert a new event and return its id. `event_date` is an optional
-    ISO date string (e.g. '2026-07-11'), matching schema.sql's TEXT column."""
+    ISO date string (e.g. '2026-07-11'), matching schema.sql's TEXT column.
+    `currency` is a display-only ISO 4217 code (default 'USD', matching
+    schema.sql's column default); it never affects balance math, which stays
+    entirely inside the event_balances / overall_balances views."""
     db = get_db()
     db.execute(
-        "INSERT INTO events (name, event_date) VALUES (?, ?)",
-        (name, event_date),
+        "INSERT INTO events (name, event_date, currency) VALUES (?, ?, ?)",
+        (name, event_date, currency),
     )
     db.commit()
     db.push()
@@ -175,6 +180,22 @@ def create_event(name: str, event_date: Optional[str] = None) -> int:
         "SELECT id FROM events WHERE name = ? ORDER BY id DESC LIMIT 1",
         (name,),
     ).fetchone()[0]
+
+
+def update_event_currency(event_id: int, currency: str) -> None:
+    """Update the display-only currency code for an event (e.g. persisting a
+    user's manual override, or confirming a currency detected by vision
+    extraction). Raises ValueError if the event does not exist. Purely a
+    stored attribute update — does not touch balance calculation."""
+    db = get_db()
+    if db.execute("SELECT 1 FROM events WHERE id = ?", (event_id,)).fetchone() is None:
+        raise ValueError(f"Event {event_id} does not exist")
+
+    db.execute(
+        "UPDATE events SET currency = ? WHERE id = ?", (currency, event_id)
+    )
+    db.commit()
+    db.push()
 
 
 def add_participant_to_event(event_id: int, participant_id: int) -> None:
@@ -502,28 +523,30 @@ def list_participants() -> list[dict]:
 
 
 def list_events() -> list[dict]:
-    """Return all events as a list of {id, name, event_date, created_at} dicts."""
+    """Return all events as a list of {id, name, event_date, currency,
+    created_at} dicts."""
     db = get_db()
     rows = db.execute(
-        "SELECT id, name, event_date, created_at FROM events ORDER BY id"
+        "SELECT id, name, event_date, currency, created_at FROM events ORDER BY id"
     ).fetchall()
     return [
         {
             "id": row[0],
             "name": row[1],
             "event_date": row[2],
-            "created_at": row[3],
+            "currency": row[3],
+            "created_at": row[4],
         }
         for row in rows
     ]
 
 
 def get_event_with_participants(event_id: int) -> Optional[dict]:
-    """Return {id, name, event_date, created_at, participants: [...]} for an
-    event, or None if it does not exist."""
+    """Return {id, name, event_date, currency, created_at, participants: [...]}
+    for an event, or None if it does not exist."""
     db = get_db()
     event_row = db.execute(
-        "SELECT id, name, event_date, created_at FROM events WHERE id = ?",
+        "SELECT id, name, event_date, currency, created_at FROM events WHERE id = ?",
         (event_id,),
     ).fetchone()
     if event_row is None:
@@ -541,7 +564,8 @@ def get_event_with_participants(event_id: int) -> Optional[dict]:
         "id": event_row[0],
         "name": event_row[1],
         "event_date": event_row[2],
-        "created_at": event_row[3],
+        "currency": event_row[3],
+        "created_at": event_row[4],
         "participants": [
             {"id": row[0], "name": row[1], "created_at": row[2]}
             for row in participant_rows

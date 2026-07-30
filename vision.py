@@ -27,6 +27,7 @@ import base64
 import json
 import mimetypes
 import os
+from typing import Optional
 
 import httpx
 from dotenv import load_dotenv
@@ -91,6 +92,13 @@ already-printed absolute amount for "tax_amount" — do NOT calculate a \
 percentage yourself. If the receipt shows no tax/IVA/impuestos line at \
 all, return "tax_amount": 0.0.
 
+Also detect the currency the receipt is denominated in, as a 3-letter \
+ISO 4217 code (e.g. "USD", "EUR", "GBP", "COP", "MXN"). Infer it from a \
+currency symbol (€, $, £, ¥, etc.), an explicit code or word printed on \
+the receipt, or the store's address/locale if that's the only clue. If \
+you cannot determine it with reasonable confidence, return "currency": \
+null instead of guessing — do not default to any particular currency.
+
 Respond with ONLY a JSON object (no markdown, no code fences, no \
 commentary) with this exact shape:
 
@@ -100,14 +108,16 @@ commentary) with this exact shape:
     ...
   ],
   "receipt_total": 0.0,
-  "tax_amount": 0.0
+  "tax_amount": 0.0,
+  "currency": "USD"
 }
 
 "receipt_total" is the final total printed on the receipt (the amount \
 the customer is charged), used only as a sanity-check reference — it is \
 NOT the sum of the item prices, since it also includes tax. "tax_amount" \
 is the tax/IVA/impuestos amount described above, read directly off the \
-receipt, or 0.0 if no such line is shown.
+receipt, or 0.0 if no such line is shown. "currency" is the ISO 4217 \
+code described above, or null if it cannot be determined.
 """
 
 
@@ -151,6 +161,15 @@ class ExtractionResult(BaseModel):
     # uses it purely for transparency ("IVA detected: X, already included
     # proportionally above").
     tax_amount: float = Field(ge=0, allow_inf_nan=False, default=0.0)
+    # The ISO 4217 currency code the model read off the receipt (e.g.
+    # "USD", "EUR"), or None when it couldn't be determined with
+    # reasonable confidence. Display-only: no conversion logic exists or
+    # is planned, and this never overrides an event's own currency
+    # setting — it's just a pre-fill hint for the human reviewer, who
+    # falls back to the event's configured currency when this is None.
+    # Deliberately not validated against a fixed set of codes — that
+    # enumeration isn't this module's job.
+    currency: Optional[str] = Field(default=None)
     warnings: list[str] = Field(default_factory=list)
 
 

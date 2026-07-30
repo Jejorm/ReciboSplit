@@ -5,7 +5,7 @@ import StatusMessage from './StatusMessage.jsx';
 import { formatCurrency } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
 
-function ItemList({ items, eventParticipants, onAssignmentsSaved }) {
+function ItemList({ items, eventParticipants, currency, onAssignmentsSaved }) {
   const { t } = useTranslation();
   const [expandedItemId, setExpandedItemId] = useState(null);
 
@@ -24,7 +24,7 @@ function ItemList({ items, eventParticipants, onAssignmentsSaved }) {
                 .map((assignment) =>
                   t('itemList.assignmentEntry', {
                     name: assignment.participant_name,
-                    amount: formatCurrency(item.price * assignment.share),
+                    amount: formatCurrency(item.price * assignment.share, currency),
                   }),
                 )
                 .join(', ');
@@ -37,7 +37,7 @@ function ItemList({ items, eventParticipants, onAssignmentsSaved }) {
                 {item.description}
                 {item.quantity && item.quantity > 1 ? t('itemList.quantitySuffix', { quantity: item.quantity }) : ''}
               </span>
-              <span className="item-list__price">{formatCurrency(item.price)}</span>
+              <span className="item-list__price">{formatCurrency(item.price, currency)}</span>
             </div>
             <p className="item-list__assignments">{summary}</p>
             <button
@@ -51,6 +51,7 @@ function ItemList({ items, eventParticipants, onAssignmentsSaved }) {
               <ItemAssignment
                 item={item}
                 eventParticipants={eventParticipants}
+                currency={currency}
                 onSaved={() => {
                   onAssignmentsSaved();
                   setExpandedItemId(null);

@@ -1,11 +1,17 @@
 // Single event view: linked participants, add-participant, receipt upload, and the persistent
 // list of receipts captured for this event (fetched from the API, so it survives reloads).
 import { useEffect, useState } from 'react';
-import { addParticipantToEvent, getEvent, getEventReceipts, getParticipants } from '../api.js';
+import {
+  addParticipantToEvent,
+  getEvent,
+  getEventReceipts,
+  getParticipants,
+  updateEventCurrency,
+} from '../api.js';
 import StatusMessage from './StatusMessage.jsx';
 import ReceiptUpload from './ReceiptUpload.jsx';
 import ReceiptDetail from './ReceiptDetail.jsx';
-import { formatCurrency, formatDate } from '../utils.js';
+import { CURRENCY_OPTIONS, formatCurrency, formatDate } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
 import { translateApiMessage } from '../i18n/apiMessages.js';
 
@@ -27,6 +33,11 @@ function EventDetail({ eventId, onBack }) {
   const [loadingReceipts, setLoadingReceipts] = useState(true);
   const [receiptsError, setReceiptsError] = useState(null);
   const [activeReceiptId, setActiveReceiptId] = useState(null);
+
+  const [customCurrencyMode, setCustomCurrencyMode] = useState(false);
+  const [customCurrencyValue, setCustomCurrencyValue] = useState('');
+  const [savingCurrency, setSavingCurrency] = useState(false);
+  const [currencyError, setCurrencyError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -114,6 +125,42 @@ function EventDetail({ eventId, onBack }) {
     await refreshReceipts();
   }
 
+  async function applyCurrencyChange(rawCode) {
+    const nextCode = rawCode.trim().toUpperCase();
+    if (!nextCode || nextCode === event.currency) {
+      setCustomCurrencyMode(false);
+      return;
+    }
+    setSavingCurrency(true);
+    setCurrencyError(null);
+    try {
+      await updateEventCurrency(eventId, nextCode);
+      await refreshEvent();
+      setCustomCurrencyMode(false);
+    } catch (error) {
+      setCurrencyError(error.message);
+    } finally {
+      setSavingCurrency(false);
+    }
+  }
+
+  function handleCurrencySelectChange(value) {
+    if (value === 'OTHER') {
+      setCustomCurrencyMode(true);
+      setCustomCurrencyValue('');
+      return;
+    }
+    applyCurrencyChange(value);
+  }
+
+  // Bubbles a vision-detected currency confirmation (from deep inside
+  // ExtractionReview, via ReceiptDetail) up to the single source of truth for
+  // the event's currency.
+  async function handleCurrencyConfirmed(newCurrency) {
+    await updateEventCurrency(eventId, newCurrency);
+    await refreshEvent();
+  }
+
   if (loadingEvent) {
     return (
       <section className="page">
@@ -143,6 +190,8 @@ function EventDetail({ eventId, onBack }) {
         receiptId={activeReceiptId}
         eventParticipants={event.participants}
         fallbackTotal={activeReceiptMeta ? activeReceiptMeta.total_amount : null}
+        currency={event.currency}
+        onCurrencyConfirmed={handleCurrencyConfirmed}
         onBack={() => setActiveReceiptId(null)}
       />
     );
@@ -157,6 +206,55 @@ function EventDetail({ eventId, onBack }) {
       <div className="page__intro">
         <h2 className="page__title">{event.name}</h2>
         <p className="page__hint">{formatDate(event.event_date || event.created_at, language)}</p>
+
+        <label className="ledger-form__field">
+          <span className="ledger-form__label">{t('eventDetail.currencyLabel')}</span>
+          {!customCurrencyMode ? (
+            <select
+              value={event.currency}
+              onChange={(selectEvent) => handleCurrencySelectChange(selectEvent.target.value)}
+              disabled={savingCurrency}
+            >
+              {CURRENCY_OPTIONS.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+              {!CURRENCY_OPTIONS.some((option) => option.code === event.currency) ? (
+                <option value={event.currency}>{event.currency}</option>
+              ) : null}
+              <option value="OTHER">{t('eventDetail.currencyOther')}</option>
+            </select>
+          ) : (
+            <span className="ledger-form ledger-form--inline">
+              <input
+                type="text"
+                value={customCurrencyValue}
+                onChange={(inputEvent) => setCustomCurrencyValue(inputEvent.target.value)}
+                placeholder={t('eventDetail.currencyCustomPlaceholder')}
+                maxLength={8}
+                disabled={savingCurrency}
+              />
+              <button
+                type="button"
+                className="btn btn--secondary btn--small"
+                onClick={() => applyCurrencyChange(customCurrencyValue)}
+                disabled={savingCurrency || customCurrencyValue.trim() === ''}
+              >
+                {savingCurrency ? t('eventDetail.currencySaving') : t('eventDetail.currencyApply')}
+              </button>
+              <button
+                type="button"
+                className="btn btn--ghost btn--small"
+                onClick={() => setCustomCurrencyMode(false)}
+                disabled={savingCurrency}
+              >
+                {t('common.discard')}
+              </button>
+            </span>
+          )}
+        </label>
+        {currencyError ? <StatusMessage kind="error">{translateApiMessage(currencyError, t)}</StatusMessage> : null}
       </div>
 
       <div className="ledger-block">
@@ -235,7 +333,7 @@ function EventDetail({ eventId, onBack }) {
                     {t('eventDetail.receiptLabel', { id: receipt.id, payer: receipt.payer_name })}
                   </span>
                   <span className="ledger-list__meta">
-                    {formatCurrency(receipt.total_amount)} · {formatDate(receipt.uploaded_at, language)}
+                    {formatCurrency(receipt.total_amount, event.currency)} · {formatDate(receipt.uploaded_at, language)}
                   </span>
                 </button>
               </li>

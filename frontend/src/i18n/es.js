@@ -84,6 +84,11 @@ export default {
   'eventDetail.loadingReceipts': 'Cargando recibos…',
   'eventDetail.noReceipts': 'Todavía no se subió ningún recibo para este evento.',
   'eventDetail.receiptLabel': 'Recibo #{id} — pagado por {payer}',
+  'eventDetail.currencyLabel': 'Moneda',
+  'eventDetail.currencyOther': 'Otra…',
+  'eventDetail.currencyCustomPlaceholder': 'ej. JPY',
+  'eventDetail.currencyApply': 'Aplicar',
+  'eventDetail.currencySaving': 'Guardando…',
 
   // Receipt upload form
   'receiptUpload.noParticipants': 'Agrega al menos un participante a este evento antes de subir un recibo.',
@@ -127,8 +132,9 @@ export default {
   'itemAssignment.evenSplit': 'Dividir en partes iguales',
   'itemAssignment.save': 'Guardar asignación',
   'itemAssignment.saving': 'Guardando…',
+  'itemAssignment.amountAriaLabel': 'Monto que debe {name}',
   'itemAssignment.mismatch':
-    'Las partes suman {total}, no 1.0. Aun así puedes guardar — el servidor tiene la última palabra.',
+    'Los montos suman {total}, no el precio del ítem de {expected}. Aun así puedes guardar — el servidor tiene la última palabra.',
 
   // Extraction review (Phase 2)
   'extraction.title': 'Extraer ítems de la foto',
@@ -154,6 +160,11 @@ export default {
   'extraction.addItemsButtonOne': 'Agregar {count} ítem al recibo',
   'extraction.addItemsButtonOther': 'Agregar {count} ítems al recibo',
   'extraction.saving': 'Guardando…',
+  'extraction.currencyMismatch':
+    'Detectamos que este recibo está en {detected}, pero este evento está configurado en {current}. ¿Cambiar el evento a {detected}?',
+  'extraction.currencySwitchButton': 'Cambiar a {detected}',
+  'extraction.currencySwitching': 'Cambiando…',
+  'extraction.currencyDismiss': 'Mantener {current}',
   'extraction.partialSaveHint':
     'Es posible que el guardado se haya completado parcialmente — revisa la lista de ítems de abajo y quita las filas que ya se hayan agregado antes de volver a intentarlo.',
 
@@ -171,6 +182,8 @@ export default {
   'balances.table.consumed': 'Consumido',
   'balances.table.net': 'Neto',
   'balances.overallTitle': 'General, en todos los eventos',
+  'balances.mixedCurrenciesHint':
+    'Los eventos usan monedas distintas — los totales de abajo son una suma directa, sin conversión.',
   'balances.loadingOverall': 'Cargando balance general…',
   'balances.nothingToSettle': 'Todavía no hay nada que saldar.',
   'balances.dangerZone.title': 'Zona de peligro',

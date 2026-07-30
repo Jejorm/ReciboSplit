@@ -2,17 +2,17 @@
 import { formatCurrency } from '../utils.js';
 import { useTranslation } from '../i18n/LanguageContext.jsx';
 
-function BalanceBadge({ value }) {
+function BalanceBadge({ value, currency = 'USD' }) {
   const { t } = useTranslation();
   const number = Number(value) || 0;
   let label;
   let modifier;
 
   if (number > 0.005) {
-    label = t('balanceBadge.owed', { amount: formatCurrency(number) });
+    label = t('balanceBadge.owed', { amount: formatCurrency(number, currency) });
     modifier = 'credit';
   } else if (number < -0.005) {
-    label = t('balanceBadge.owes', { amount: formatCurrency(Math.abs(number)) });
+    label = t('balanceBadge.owes', { amount: formatCurrency(Math.abs(number), currency) });
     modifier = 'debit';
   } else {
     label = t('balanceBadge.settled');

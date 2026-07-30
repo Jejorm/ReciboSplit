@@ -77,6 +77,11 @@ export default {
   'eventDetail.loadingReceipts': 'Loading receipts…',
   'eventDetail.noReceipts': 'No receipts uploaded yet for this event.',
   'eventDetail.receiptLabel': 'Receipt #{id} — paid by {payer}',
+  'eventDetail.currencyLabel': 'Currency',
+  'eventDetail.currencyOther': 'Other…',
+  'eventDetail.currencyCustomPlaceholder': 'e.g. JPY',
+  'eventDetail.currencyApply': 'Apply',
+  'eventDetail.currencySaving': 'Saving…',
 
   // Receipt upload form
   'receiptUpload.noParticipants': 'Add at least one participant to this event before uploading a receipt.',
@@ -120,7 +125,9 @@ export default {
   'itemAssignment.evenSplit': 'Even split',
   'itemAssignment.save': 'Save assignment',
   'itemAssignment.saving': 'Saving…',
-  'itemAssignment.mismatch': 'Shares add up to {total}, not 1.0. You can still save — the server is the final judge.',
+  'itemAssignment.amountAriaLabel': 'Amount owed by {name}',
+  'itemAssignment.mismatch':
+    'Amounts add up to {total}, not the item price of {expected}. You can still save — the server is the final judge.',
 
   // Extraction review (Phase 2)
   'extraction.title': 'Extract items from photo',
@@ -146,6 +153,11 @@ export default {
   'extraction.addItemsButtonOne': 'Add {count} item to receipt',
   'extraction.addItemsButtonOther': 'Add {count} items to receipt',
   'extraction.saving': 'Saving…',
+  'extraction.currencyMismatch':
+    'We detected this receipt is in {detected}, but this event is set to {current}. Switch the event to {detected}?',
+  'extraction.currencySwitchButton': 'Switch to {detected}',
+  'extraction.currencySwitching': 'Switching…',
+  'extraction.currencyDismiss': 'Keep {current}',
   'extraction.partialSaveHint':
     'The save may have partially succeeded — check the items list below and remove any rows that were already added before retrying.',
 
@@ -163,6 +175,8 @@ export default {
   'balances.table.consumed': 'Consumed',
   'balances.table.net': 'Net',
   'balances.overallTitle': 'Overall, across every event',
+  'balances.mixedCurrenciesHint':
+    'Events use different currencies — totals below are a raw sum with no conversion applied.',
   'balances.loadingOverall': 'Loading overall balances…',
   'balances.nothingToSettle': 'Nothing to settle yet.',
   'balances.dangerZone.title': 'Danger zone',

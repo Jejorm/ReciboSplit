@@ -51,6 +51,10 @@ export function getEvent(eventId) {
   return requestJson(`/events/${eventId}`);
 }
 
+export function updateEventCurrency(eventId, currency) {
+  return requestJson(`/events/${eventId}/currency`, 'PUT', { currency });
+}
+
 export function addParticipantToEvent(eventId, participantId) {
   return requestJson(`/events/${eventId}/participants`, 'POST', { participant_id: participantId });
 }

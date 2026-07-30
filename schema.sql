@@ -11,6 +11,7 @@ CREATE TABLE events (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     event_date TEXT,
+    currency TEXT NOT NULL DEFAULT 'USD',  -- display-only ISO 4217 code, no conversion
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

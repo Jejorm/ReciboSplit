@@ -108,6 +108,42 @@ def test_parse_and_validate_tax_amount_negative_raises():
         _parse_and_validate(raw_json)
 
 
+def test_parse_and_validate_currency_parsed_from_payload():
+    raw_json = (
+        '{"items": [{"description": "Milk", "price": 3.5, "quantity": 1}], '
+        '"receipt_total": 3.5, "currency": "EUR"}'
+    )
+
+    result = _parse_and_validate(raw_json)
+
+    assert result.currency == "EUR"
+
+
+def test_parse_and_validate_currency_defaults_to_none_when_omitted():
+    """Existing/legacy mocked payloads (and real receipts where the model
+    couldn't tell) never send `currency` -- the Pydantic default must
+    cover them for free, with no per-fixture changes needed."""
+    raw_json = (
+        '{"items": [{"description": "Milk", "price": 3.5, "quantity": 1}], '
+        '"receipt_total": 3.5}'
+    )
+
+    result = _parse_and_validate(raw_json)
+
+    assert result.currency is None
+
+
+def test_parse_and_validate_currency_explicit_null_gives_none():
+    raw_json = (
+        '{"items": [{"description": "Milk", "price": 3.5, "quantity": 1}], '
+        '"receipt_total": 3.5, "currency": null}'
+    )
+
+    result = _parse_and_validate(raw_json)
+
+    assert result.currency is None
+
+
 # --- _parse_and_validate: malformed / invalid payloads -----------------------
 
 

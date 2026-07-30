@@ -64,6 +64,7 @@ class ParticipantOut(BaseModel):
 class EventCreate(BaseModel):
     name: str = Field(min_length=1)
     event_date: Optional[str] = None
+    currency: str = "USD"
 
 
 class EventOut(BaseModel):
@@ -71,6 +72,11 @@ class EventOut(BaseModel):
     name: str
     event_date: Optional[str]
     created_at: str
+    currency: str
+
+
+class EventCurrencyUpdate(BaseModel):
+    currency: str = Field(min_length=1)
 
 
 class EventWithParticipantsOut(EventOut):
@@ -168,6 +174,7 @@ class ExtractionProposalOut(BaseModel):
     receipt_total: float
     warnings: list[str]
     tax_amount: float
+    currency: Optional[str] = None
 
 
 class DataClearedOut(BaseModel):
@@ -210,7 +217,7 @@ def delete_participant(participant_id: int) -> None:
 
 @app.post("/events", response_model=IdResponse, status_code=201)
 def create_event(payload: EventCreate) -> IdResponse:
-    event_id = db.create_event(payload.name, payload.event_date)
+    event_id = db.create_event(payload.name, payload.event_date, payload.currency)
     return IdResponse(id=event_id)
 
 
@@ -251,6 +258,17 @@ def add_participant_to_event(
     except ValueError as error:
         raise value_error_to_http(error) from error
     return EventParticipantLinkOut(event_id=event_id, participant_id=payload.participant_id)
+
+
+@app.put("/events/{event_id}/currency", status_code=204)
+def update_event_currency(event_id: int, payload: EventCurrencyUpdate) -> None:
+    """Persists a display-only currency override for an event -- either a
+    manual change or the user confirming a currency detected by the vision
+    extractor. Never affects balance math (see db.update_event_currency)."""
+    try:
+        db.update_event_currency(event_id, payload.currency)
+    except ValueError as error:
+        raise value_error_to_http(error) from error
 
 
 # --- Receipts (image upload) -----------------------------------------------------
@@ -357,6 +375,7 @@ def extract_receipt(receipt_id: int) -> ExtractionProposalOut:
         receipt_total=result.receipt_total,
         warnings=result.warnings,
         tax_amount=result.tax_amount,
+        currency=result.currency,
     )
 
 
