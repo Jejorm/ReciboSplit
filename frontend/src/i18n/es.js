@@ -139,6 +139,8 @@ export default {
   'extraction.manualFallbackHint': 'La captura manual de abajo sigue funcionando — agrega los ítems a mano.',
   'extraction.reviewTitle': 'Revisar ítems extraídos',
   'extraction.receiptTotalOnFile': 'Total del recibo registrado: {total}',
+  'extraction.taxIncludedHint':
+    'Se detectó un IVA de {total} y ya fue incluido de forma proporcional en los precios de los ítems de arriba — nadie debe pagarlo por separado.',
   'extraction.noRowsLeft': 'No quedan filas para guardar. Descarta, o vuelve a extraer.',
   'extraction.table.description': 'Descripción',
   'extraction.table.price': 'Precio',

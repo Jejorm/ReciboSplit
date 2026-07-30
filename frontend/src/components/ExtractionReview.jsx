@@ -19,6 +19,7 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
   const [status, setStatus] = useState('idle'); // 'idle' | 'extracting' | 'reviewing'
   const [rows, setRows] = useState([]);
   const [receiptTotal, setReceiptTotal] = useState(null);
+  const [taxAmount, setTaxAmount] = useState(null);
   const [warnings, setWarnings] = useState([]);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -39,6 +40,9 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
       setReceiptTotal(
         typeof result.receipt_total === 'number' ? result.receipt_total : null
       );
+      setTaxAmount(
+        typeof result.tax_amount === 'number' && result.tax_amount > 0 ? result.tax_amount : null
+      );
       setWarnings(result.warnings || []);
       setStatus('reviewing');
     } catch (extractError) {
@@ -50,6 +54,7 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
   function handleDiscard() {
     setRows([]);
     setReceiptTotal(null);
+    setTaxAmount(null);
     setWarnings([]);
     setError(null);
     setStatus('idle');
@@ -124,6 +129,10 @@ function ExtractionReview({ receiptId, onItemsAdded }) {
 
       {receiptTotal !== null ? (
         <p className="receipt-hint">{t('extraction.receiptTotalOnFile', { total: formatCurrency(receiptTotal) })}</p>
+      ) : null}
+
+      {taxAmount !== null ? (
+        <p className="receipt-hint">{t('extraction.taxIncludedHint', { total: formatCurrency(taxAmount) })}</p>
       ) : null}
 
       {warnings.map((warning, index) => (

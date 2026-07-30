@@ -167,6 +167,7 @@ class ExtractionProposalOut(BaseModel):
     items: list[ProposedItemOut]
     receipt_total: float
     warnings: list[str]
+    tax_amount: float
 
 
 class DataClearedOut(BaseModel):
@@ -355,6 +356,7 @@ def extract_receipt(receipt_id: int) -> ExtractionProposalOut:
         ],
         receipt_total=result.receipt_total,
         warnings=result.warnings,
+        tax_amount=result.tax_amount,
     )
 
 

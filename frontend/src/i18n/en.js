@@ -131,6 +131,8 @@ export default {
   'extraction.manualFallbackHint': 'Manual capture below still works — add items by hand instead.',
   'extraction.reviewTitle': 'Review extracted items',
   'extraction.receiptTotalOnFile': 'Receipt total on file: {total}',
+  'extraction.taxIncludedHint':
+    'Tax/VAT of {total} was detected and has already been proportionally included in the item prices above — no one needs to be charged for it separately.',
   'extraction.noRowsLeft': 'No rows left to save. Discard, or extract again.',
   'extraction.table.description': 'Description',
   'extraction.table.price': 'Price',

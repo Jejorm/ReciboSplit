@@ -11,6 +11,10 @@ Phase 1 (manual capture, full day-by-day log preserved further down) and Phase 2
 
 Any new work from here starts a new phase/feature on top of a finished app.
 
+### Post-completion fixes
+
+- **2026-07-29 — Tax/IVA proration in vision extraction.** Bug: receipts with an explicit tax/IVA line (e.g. `bills/bill2.jpg`: 80.00 + 55.00 pre-tax, 10% IVA = 13.50, real total 148.50) were extracted with items summing only to the pre-tax subtotal (135.00), silently losing the tax amount from the group's balance — nobody ever got charged for it. Fixed entirely inside `vision.py` (no schema/migration, no changes to the `event_balances`/`overall_balances` SQL views): the extraction prompt now also detects a `tax_amount`, which is prorated proportionally into the returned item prices before they're ever saved (`_apply_tax_proration`), so `items.price` already reflects what the group owes, tax included. The original detected `tax_amount` is preserved separately (`ExtractionResult.tax_amount`, threaded through `POST /receipts/{id}/extract` via `main.py`) purely so the frontend can show a transparency note ("IVA detected: X, already included above") in `ExtractionReview.jsx`. Verified live end-to-end against the real `bill2.jpg` photo (real OpenAI call): extracted items `[88.0, 60.5]`, `tax_amount: 13.5`, `receipt_total: 148.5`, no warnings — exact match. Tests: `tests/test_vision_extraction.py` grew from 39 to 49 cases (proration math, rounding-remainder edge case, warning-threshold change from 0.7→0.9 of `receipt_total` now that tax is prorated in before the mismatch check runs); full suite 100 passed.
+
 ### Phase 2 task plan
 
 | Task | Description                                                                                                                                                                                                     | Main subagent            | Status     |
