@@ -117,6 +117,15 @@ class ItemCreatedOut(BaseModel):
     price: float
 
 
+class ItemUpdate(BaseModel):
+    description: str = Field(min_length=1)
+
+
+class ItemRenamedOut(BaseModel):
+    id: int
+    description: str
+
+
 class AssignmentIn(BaseModel):
     participant_id: int
     share: float = Field(gt=0)
@@ -402,6 +411,25 @@ def add_items(
         created.append(ItemCreatedOut(id=item_id, description=item.name, price=item.price))
 
     return created
+
+
+@app.patch("/items/{item_id}", response_model=ItemRenamedOut)
+def rename_item(item_id: int, payload: ItemUpdate) -> ItemRenamedOut:
+    """Rename an item (its `description`). No other fields are editable
+    through this endpoint."""
+    try:
+        db.update_item(item_id, payload.description)
+    except ValueError as error:
+        raise value_error_to_http(error) from error
+    return ItemRenamedOut(id=item_id, description=payload.description)
+
+
+@app.delete("/items/{item_id}", status_code=204)
+def delete_item(item_id: int) -> None:
+    try:
+        db.delete_item(item_id)
+    except ValueError as error:
+        raise value_error_to_http(error) from error
 
 
 # --- Item assignments -----------------------------------------------------------

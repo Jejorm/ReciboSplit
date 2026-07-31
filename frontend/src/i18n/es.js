@@ -127,6 +127,11 @@ export default {
   'itemList.assignmentEntry': '{name} ({amount})',
   'itemList.quantitySuffix': ' × {quantity}',
   'itemList.assign': 'Asignar',
+  'itemList.rename': 'Renombrar',
+  'itemList.save': 'Guardar',
+  'itemList.renaming': 'Guardando…',
+  'itemList.cancel': 'Cancelar',
+  'itemList.confirmDelete': '¿Eliminar el ítem "{name}"? Esta acción no se puede deshacer.',
 
   // Item assignment panel
   'itemAssignment.evenSplit': 'Dividir en partes iguales',

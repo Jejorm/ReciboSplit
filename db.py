@@ -366,6 +366,24 @@ def add_item(receipt_id: int, name: str, price: float) -> int:
     ).fetchone()[0]
 
 
+def update_item(item_id: int, description: str) -> None:
+    """Rename an item (update its description). Raises ValueError if the
+    item does not exist."""
+    db = get_db()
+
+    if db.execute(
+        "SELECT 1 FROM items WHERE id = ?", (item_id,)
+    ).fetchone() is None:
+        raise ValueError(f"Item {item_id} does not exist")
+
+    db.execute(
+        "UPDATE items SET description = ? WHERE id = ?",
+        (description, item_id),
+    )
+    db.commit()
+    db.push()
+
+
 # --- Delete helpers -----------------------------------------------------------
 #
 # Gotcha: schema.sql declares `ON DELETE CASCADE` on several foreign keys, but

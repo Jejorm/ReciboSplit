@@ -1,6 +1,7 @@
 """Integration tests for the three destructive DELETE endpoints added in
 Phase 2 Task 7: DELETE /participants/{id}, DELETE /events/{id}, and
-DELETE /data. Uses the same offline fixtures/TestClient pattern as
+DELETE /data, plus the item rename/delete endpoints (PATCH /items/{id},
+DELETE /items/{id}). Uses the same offline fixtures/TestClient pattern as
 tests/test_api_flow.py (a fresh, throwaway, local-only SQLite db per test).
 
 Covers:
@@ -13,6 +14,13 @@ Covers:
 - Deleting an unknown event id (404).
 - DELETE /data wipes every table (200) and removes uploaded files, leaving
   GET /participants and GET /balances empty.
+- Renaming an item (200) and confirming the new description round-trips
+  through GET /receipts/{id}.
+- Renaming an unknown item (404) and an empty-description rename (422,
+  Pydantic-level, no DB call, original description untouched).
+- Deleting an item (204) and confirming it disappears, including cascade
+  cleanup of its item_assignments.
+- Deleting an unknown item (404).
 """
 
 from pathlib import Path
@@ -201,3 +209,119 @@ def test_delete_all_data_wipes_everything(api_client, image_upload_files, tmp_pa
     # The uploads directory stays in place, but no files remain in it.
     assert uploads_dir.exists()
     assert list(uploads_dir.iterdir()) == []
+
+
+# --- PATCH /items/{item_id} (rename) --------------------------------------------
+
+
+def _create_item(client, receipt_id: int, name: str, price: float) -> int:
+    response = client.post(
+        f"/receipts/{receipt_id}/items", json={"name": name, "price": price}
+    )
+    assert response.status_code == 201
+    return response.json()[0]["id"]
+
+
+def test_rename_item_returns_200_and_persists(api_client, image_upload_files):
+    client = api_client
+
+    payer_id = _create_participant(client, "Julia")
+    event_id = _create_event(client, "Cena")
+    _link(client, event_id, payer_id)
+    receipt_id = _upload_receipt(client, event_id, payer_id, 15.0, image_upload_files)
+    item_id = _create_item(client, receipt_id, "Papas", 15.0)
+
+    response = client.patch(f"/items/{item_id}", json={"description": "Papas fritas"})
+    assert response.status_code == 200
+    assert response.json() == {"id": item_id, "description": "Papas fritas"}
+
+    # Don't just trust the PATCH response -- verify the rename round-trips
+    # through the DB via a fresh GET.
+    receipt = client.get(f"/receipts/{receipt_id}").json()
+    renamed = next(item for item in receipt["items"] if item["id"] == item_id)
+    assert renamed["description"] == "Papas fritas"
+
+
+def test_rename_unknown_item_returns_404(api_client):
+    client = api_client
+
+    response = client.patch("/items/999999", json={"description": "Nada"})
+    assert response.status_code == 404
+
+
+def test_rename_item_with_empty_description_returns_422_and_leaves_item_untouched(
+    api_client, image_upload_files
+):
+    client = api_client
+
+    payer_id = _create_participant(client, "Karina")
+    event_id = _create_event(client, "Reunion")
+    _link(client, event_id, payer_id)
+    receipt_id = _upload_receipt(client, event_id, payer_id, 8.0, image_upload_files)
+    item_id = _create_item(client, receipt_id, "Pan", 8.0)
+
+    response = client.patch(f"/items/{item_id}", json={"description": ""})
+    assert response.status_code == 422
+
+    # Pydantic validation rejects the empty string before any DB call, so
+    # the original description must still be intact.
+    receipt = client.get(f"/receipts/{receipt_id}").json()
+    untouched = next(item for item in receipt["items"] if item["id"] == item_id)
+    assert untouched["description"] == "Pan"
+
+
+# --- DELETE /items/{item_id} -----------------------------------------------------
+
+
+def test_delete_item_with_no_assignments_returns_204_and_disappears(
+    api_client, image_upload_files
+):
+    client = api_client
+
+    payer_id = _create_participant(client, "Leandro")
+    event_id = _create_event(client, "Fiesta")
+    _link(client, event_id, payer_id)
+    receipt_id = _upload_receipt(client, event_id, payer_id, 12.0, image_upload_files)
+    item_id = _create_item(client, receipt_id, "Helado", 12.0)
+
+    response = client.delete(f"/items/{item_id}")
+    assert response.status_code == 204
+
+    assert client.get(f"/items/{item_id}/assignments").status_code == 404
+    receipt = client.get(f"/receipts/{receipt_id}").json()
+    assert all(item["id"] != item_id for item in receipt["items"])
+
+
+def test_delete_unknown_item_returns_404(api_client):
+    client = api_client
+
+    response = client.delete("/items/999999")
+    assert response.status_code == 404
+
+
+def test_delete_item_with_assignments_cascades_item_assignments(
+    api_client, image_upload_files
+):
+    client = api_client
+
+    payer_id = _create_participant(client, "Mora")
+    consumer_id = _create_participant(client, "Nico")
+    event_id = _create_event(client, "Almuerzo")
+    _link(client, event_id, payer_id)
+    _link(client, event_id, consumer_id)
+    receipt_id = _upload_receipt(client, event_id, payer_id, 18.0, image_upload_files)
+    item_id = _create_item(client, receipt_id, "Ensalada", 18.0)
+    _assign(client, item_id, [{"participant_id": consumer_id, "share": 1.0}])
+
+    response = client.delete(f"/items/{item_id}")
+    assert response.status_code == 204
+
+    # The item's assignments are gone along with it, not left orphaned.
+    assert client.get(f"/items/{item_id}/assignments").status_code == 404
+    receipt = client.get(f"/receipts/{receipt_id}").json()
+    assert all(item["id"] != item_id for item in receipt["items"])
+
+    # The consumer participant itself is untouched -- only the item's own
+    # assignment row is cascade-deleted.
+    remaining = {p["id"] for p in client.get("/participants").json()}
+    assert consumer_id in remaining

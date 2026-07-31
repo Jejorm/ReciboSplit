@@ -83,6 +83,14 @@ export function extractReceiptItems(receiptId) {
   return requestJson(`/receipts/${receiptId}/extract`, 'POST');
 }
 
+export function deleteItem(itemId) {
+  return requestJson(`/items/${itemId}`, 'DELETE');
+}
+
+export function renameItem(itemId, description) {
+  return requestJson(`/items/${itemId}`, 'PATCH', { description });
+}
+
 export function getItemAssignments(itemId) {
   return requestJson(`/items/${itemId}/assignments`);
 }

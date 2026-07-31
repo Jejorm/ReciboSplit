@@ -120,6 +120,11 @@ export default {
   'itemList.assignmentEntry': '{name} ({amount})',
   'itemList.quantitySuffix': ' × {quantity}',
   'itemList.assign': 'Assign',
+  'itemList.rename': 'Rename',
+  'itemList.save': 'Save',
+  'itemList.renaming': 'Saving…',
+  'itemList.cancel': 'Cancel',
+  'itemList.confirmDelete': 'Delete item "{name}"? This cannot be undone.',
 
   // Item assignment panel
   'itemAssignment.evenSplit': 'Even split',
