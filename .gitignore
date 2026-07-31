@@ -26,6 +26,7 @@ bills/
 
 # Local tooling cache/registry, not part of the project
 .atl/
+.wrangler/
 
 # One-off/throwaway scripts, superseded by production code
 verify_connection.py
