@@ -186,6 +186,7 @@ export default {
   'balances.table.paid': 'Pagado',
   'balances.table.consumed': 'Consumido',
   'balances.table.net': 'Neto',
+  'balances.table.netIncludesPayments': 'incluye pagos',
   'balances.overallTitle': 'General, en todos los eventos',
   'balances.mixedCurrenciesHint':
     'Los eventos usan monedas distintas — los totales de abajo son una suma directa, sin conversión.',
@@ -198,6 +199,24 @@ export default {
   'balances.dangerZone.confirmDeleteAll':
     'Esto elimina TODOS los participantes, eventos, recibos y balances. Esta acción no se puede deshacer.',
   'balances.dangerZone.deleteSuccess': 'Todos los datos fueron eliminados.',
+
+  // Settlements (registrar un pago contra una deuda, por evento)
+  'settlements.formTitle': 'Registrar un pago',
+  'settlements.fromLabel': 'Pagado por',
+  'settlements.toLabel': 'Pagado a',
+  'settlements.selectParticipant': 'Selecciona un participante…',
+  'settlements.amountLabel': 'Monto',
+  'settlements.noteLabel': 'Nota (opcional)',
+  'settlements.notePlaceholder': 'ej. Efectivo en la puerta',
+  'settlements.submit': 'Registrar pago',
+  'settlements.submitting': 'Registrando…',
+  'settlements.settleUpButton': 'Saldar',
+  'settlements.historyTitle': 'Pagos',
+  'settlements.loading': 'Cargando pagos…',
+  'settlements.empty': 'Todavía no hay pagos registrados para este evento.',
+  'settlements.entry': '{from} → {to} {amount}',
+  'settlements.entryWithNote': '{from} → {to} {amount} ({note})',
+  'settlements.confirmDelete': '¿Eliminar este pago de {amount} de {from} a {to}? Esta acción no se puede deshacer.',
 
   // Balance badge
   'balanceBadge.owed': 'le deben {amount}',

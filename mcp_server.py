@@ -64,7 +64,9 @@ def list_events() -> list[dict]:
 def get_event_balances(event_id: int) -> list[dict]:
     """Get the balance breakdown for ONE specific event: for every
     participant of that event, how much they paid (total_paid), how much
-    they consumed (total_consumed), and their net_balance (paid - consumed;
+    they consumed (total_consumed), how much they settled in cash to others
+    (total_settled_sent) or received (total_settled_received), and their
+    net_balance (paid - consumed + settled_sent - settled_received;
     positive means others owe them, negative means they owe others) for
     THAT EVENT ONLY. Use this to answer questions like "who paid what at
     [event name]" or "who owes whom for [event name]". Look up the event_id
@@ -79,9 +81,10 @@ def get_event_balances(event_id: int) -> list[dict]:
 @mcp.tool()
 def get_overall_balances() -> list[dict]:
     """Get the CUMULATIVE balance across ALL events for every participant:
-    total_paid_all_events, total_consumed_all_events, and
-    total_net_balance (paid - consumed, summed across every event they have
-    participated in). This is the tool to use for "who owes how much
+    total_paid_all_events, total_consumed_all_events,
+    total_settled_sent_all_events, total_settled_received_all_events, and
+    total_net_balance (paid - consumed + settled_sent - settled_received,
+    summed across every event they have participated in). This is the tool to use for "who owes how much
     overall", "what's everyone's total balance", or "who owes whom in
     total" questions that are not scoped to a single event. Net balances
     across all participants always sum to zero."""

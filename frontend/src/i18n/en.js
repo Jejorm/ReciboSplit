@@ -179,6 +179,7 @@ export default {
   'balances.table.paid': 'Paid',
   'balances.table.consumed': 'Consumed',
   'balances.table.net': 'Net',
+  'balances.table.netIncludesPayments': 'incl. payments',
   'balances.overallTitle': 'Overall, across every event',
   'balances.mixedCurrenciesHint':
     'Events use different currencies — totals below are a raw sum with no conversion applied.',
@@ -191,6 +192,24 @@ export default {
   'balances.dangerZone.confirmDeleteAll':
     'This deletes ALL participants, events, receipts and balances. This cannot be undone.',
   'balances.dangerZone.deleteSuccess': 'All data deleted.',
+
+  // Settlements (record a payment against a debt, per event)
+  'settlements.formTitle': 'Record a payment',
+  'settlements.fromLabel': 'Paid by',
+  'settlements.toLabel': 'Paid to',
+  'settlements.selectParticipant': 'Select participant…',
+  'settlements.amountLabel': 'Amount',
+  'settlements.noteLabel': 'Note (optional)',
+  'settlements.notePlaceholder': 'e.g. Cash at the door',
+  'settlements.submit': 'Record payment',
+  'settlements.submitting': 'Recording…',
+  'settlements.settleUpButton': 'Settle up',
+  'settlements.historyTitle': 'Payments',
+  'settlements.loading': 'Loading payments…',
+  'settlements.empty': 'No payments recorded yet for this event.',
+  'settlements.entry': '{from} → {to} {amount}',
+  'settlements.entryWithNote': '{from} → {to} {amount} ({note})',
+  'settlements.confirmDelete': 'Delete this payment of {amount} from {from} to {to}? This cannot be undone.',
 
   // Balance badge
   'balanceBadge.owed': 'owed {amount}',

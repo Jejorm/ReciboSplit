@@ -28,10 +28,11 @@ Call `close_db()` between test sessions to drop the shared connection so the
 next `get_db()`/`init_db()` call opens a fresh file.
 
 Scope: participants, events, event_participants, receipts, items,
-item_assignments (assignment writes/reads, delete helpers), and balance
-reads (get_event_balances / get_overall_balances — plain SELECTs from the
-event_balances / overall_balances views defined in schema.sql; the
-calculation itself lives only in those views, never in Python).
+item_assignments, settlements (assignment/settlement writes/reads, delete
+helpers), and balance reads (get_event_balances / get_overall_balances —
+plain SELECTs from the event_balances / overall_balances views defined in
+schema.sql; the calculation itself lives only in those views, never in
+Python).
 
 Gotcha: `PRAGMA foreign_keys` is OFF by default on pyturso connections, so
 schema.sql's `ON DELETE CASCADE` clauses do not fire automatically. All
@@ -343,6 +344,68 @@ def assign_item(item_id: int, assignments: list[dict]) -> None:
     db.push()
 
 
+def create_settlement(
+    event_id: int,
+    from_participant_id: int,
+    to_participant_id: int,
+    amount: float,
+    note: Optional[str] = None,
+) -> int:
+    """Insert a settlement (a cash payment from one participant to another,
+    settling a debt fully or partially within an event) and return its id.
+
+    Validates:
+    - the event exists
+    - both participants exist AND are participants of that event (same
+      pattern as create_receipt())
+    - from_participant_id != to_participant_id
+    - amount > 0
+    """
+    db = get_db()
+
+    if db.execute(
+        "SELECT 1 FROM events WHERE id = ?", (event_id,)
+    ).fetchone() is None:
+        raise ValueError(f"Event {event_id} does not exist")
+
+    for participant_id in (from_participant_id, to_participant_id):
+        if db.execute(
+            "SELECT 1 FROM participants WHERE id = ?", (participant_id,)
+        ).fetchone() is None:
+            raise ValueError(f"Participant {participant_id} does not exist")
+
+        if db.execute(
+            "SELECT 1 FROM event_participants WHERE event_id = ? AND participant_id = ?",
+            (event_id, participant_id),
+        ).fetchone() is None:
+            raise ValueError(
+                f"Participant {participant_id} is not a participant of "
+                f"event {event_id}; add them via add_participant_to_event() first"
+            )
+
+    if from_participant_id == to_participant_id:
+        raise ValueError(
+            f"Participant {from_participant_id} cannot settle with themselves"
+        )
+
+    if amount <= 0:
+        raise ValueError(f"Settlement amount must be greater than 0, got {amount}")
+
+    db.execute(
+        "INSERT INTO settlements "
+        "(event_id, from_participant_id, to_participant_id, amount, note) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (event_id, from_participant_id, to_participant_id, amount, note),
+    )
+    db.commit()
+    db.push()
+    return db.execute(
+        "SELECT id FROM settlements WHERE event_id = ? AND from_participant_id = ? "
+        "AND to_participant_id = ? ORDER BY id DESC LIMIT 1",
+        (event_id, from_participant_id, to_participant_id),
+    ).fetchone()[0]
+
+
 def add_item(receipt_id: int, name: str, price: float) -> int:
     """Insert an item (schema column is `description`) for a receipt and
     return its id. Validates the receipt exists."""
@@ -431,12 +494,13 @@ def delete_receipt(receipt_id: int) -> None:
 
 def delete_event(event_id: int) -> None:
     """Delete an event and everything under it (event_participants, receipts,
-    items, item_assignments). Raises ValueError if the event does not
-    exist."""
+    items, item_assignments, settlements). Raises ValueError if the event
+    does not exist."""
     db = get_db()
     if db.execute("SELECT 1 FROM events WHERE id = ?", (event_id,)).fetchone() is None:
         raise ValueError(f"Event {event_id} does not exist")
 
+    db.execute("DELETE FROM settlements WHERE event_id = ?", (event_id,))
     db.execute(
         "DELETE FROM item_assignments WHERE item_id IN ("
         "  SELECT i.id FROM items i "
@@ -457,20 +521,34 @@ def delete_event(event_id: int) -> None:
     db.push()
 
 
+def delete_settlement(settlement_id: int) -> None:
+    """Delete a settlement. Raises ValueError if it does not exist."""
+    db = get_db()
+    if db.execute(
+        "SELECT 1 FROM settlements WHERE id = ?", (settlement_id,)
+    ).fetchone() is None:
+        raise ValueError(f"Settlement {settlement_id} does not exist")
+
+    db.execute("DELETE FROM settlements WHERE id = ?", (settlement_id,))
+    db.commit()
+    db.push()
+
+
 def delete_participant(participant_id: int) -> None:
     """Delete a participant. Raises ValueError if the participant does not
     exist.
 
     Safe-deletion policy: a participant carries financial history the moment
-    they have paid for a receipt (`receipts.paid_by`) or have been assigned
-    a share of an item (`item_assignments`) — deleting them in that case
-    would silently corrupt past balances. This is REFUSED with a ValueError
-    naming the reason.
+    they have paid for a receipt (`receipts.paid_by`), have been assigned a
+    share of an item (`item_assignments`), or are involved (either side) in
+    a settlement (`settlements`) — deleting them in that case would silently
+    corrupt past balances. This is REFUSED with a ValueError naming the
+    reason.
 
     A participant with no such history but who is merely linked to one or
     more events (`event_participants`, e.g. added to an event but never
-    involved in a receipt/assignment) is safe to remove: those membership
-    links are cascade-deleted first, then the participant row.
+    involved in a receipt/assignment/settlement) is safe to remove: those
+    membership links are cascade-deleted first, then the participant row.
     """
     db = get_db()
     if db.execute(
@@ -495,6 +573,16 @@ def delete_participant(participant_id: int) -> None:
             "and cannot be deleted (would corrupt consumption history)"
         )
 
+    if db.execute(
+        "SELECT 1 FROM settlements WHERE from_participant_id = ? "
+        "OR to_participant_id = ?",
+        (participant_id, participant_id),
+    ).fetchone() is not None:
+        raise ValueError(
+            f"Participant {participant_id} has one or more settlements "
+            "and cannot be deleted (would corrupt settlement history)"
+        )
+
     db.execute(
         "DELETE FROM event_participants WHERE participant_id = ?",
         (participant_id,),
@@ -512,10 +600,11 @@ def clear_all_data() -> None:
 
     Same FK-safe-order rationale as the other delete_* helpers above (pyturso
     connections don't enable `PRAGMA foreign_keys`, so ON DELETE CASCADE does
-    not fire): item_assignments -> items -> receipts -> event_participants ->
-    events -> participants. Idempotent — safe to call on an already-empty
-    database."""
+    not fire): settlements -> item_assignments -> items -> receipts ->
+    event_participants -> events -> participants. Idempotent — safe to call
+    on an already-empty database."""
     db = get_db()
+    db.execute("DELETE FROM settlements")
     db.execute("DELETE FROM item_assignments")
     db.execute("DELETE FROM items")
     db.execute("DELETE FROM receipts")
@@ -709,6 +798,72 @@ def get_receipt_with_items(receipt_id: int) -> Optional[dict]:
     }
 
 
+def list_event_settlements(event_id: int) -> list[dict]:
+    """Return every settlement for `event_id` as a list of {id,
+    from_participant_id, from_name, to_participant_id, to_name, amount,
+    note, created_at} dicts, ordered by id. Raises ValueError if the event
+    does not exist. An event that exists but has no settlements yet returns
+    an empty list."""
+    db = get_db()
+    if db.execute("SELECT 1 FROM events WHERE id = ?", (event_id,)).fetchone() is None:
+        raise ValueError(f"Event {event_id} does not exist")
+
+    rows = db.execute(
+        "SELECT s.id, s.from_participant_id, pf.name, s.to_participant_id, "
+        "pt.name, s.amount, s.note, s.created_at "
+        "FROM settlements s "
+        "JOIN participants pf ON pf.id = s.from_participant_id "
+        "JOIN participants pt ON pt.id = s.to_participant_id "
+        "WHERE s.event_id = ? ORDER BY s.id",
+        (event_id,),
+    ).fetchall()
+    return [
+        {
+            "id": row[0],
+            "from_participant_id": row[1],
+            "from_name": row[2],
+            "to_participant_id": row[3],
+            "to_name": row[4],
+            "amount": row[5],
+            "note": row[6],
+            "created_at": row[7],
+        }
+        for row in rows
+    ]
+
+
+def list_all_settlements() -> list[dict]:
+    """Return every settlement across all events as a list of {id, event_id,
+    event_name, from_participant_id, from_name, to_participant_id, to_name,
+    amount, note, created_at} dicts, ordered by created_at DESC (most recent
+    first)."""
+    db = get_db()
+    rows = db.execute(
+        "SELECT s.id, s.event_id, e.name, s.from_participant_id, pf.name, "
+        "s.to_participant_id, pt.name, s.amount, s.note, s.created_at "
+        "FROM settlements s "
+        "JOIN events e ON e.id = s.event_id "
+        "JOIN participants pf ON pf.id = s.from_participant_id "
+        "JOIN participants pt ON pt.id = s.to_participant_id "
+        "ORDER BY s.created_at DESC"
+    ).fetchall()
+    return [
+        {
+            "id": row[0],
+            "event_id": row[1],
+            "event_name": row[2],
+            "from_participant_id": row[3],
+            "from_name": row[4],
+            "to_participant_id": row[5],
+            "to_name": row[6],
+            "amount": row[7],
+            "note": row[8],
+            "created_at": row[9],
+        }
+        for row in rows
+    ]
+
+
 # --- Balance reads (Day 4) -----------------------------------------------------
 #
 # Both functions below are plain SELECTs from the event_balances /
@@ -720,16 +875,17 @@ def get_receipt_with_items(receipt_id: int) -> Optional[dict]:
 def get_event_balances(event_id: int) -> list[dict]:
     """Return the event_balances view rows for `event_id`, one dict per
     participant of that event: {participant_id, participant_name, total_paid,
-    total_consumed, net_balance}. Raises ValueError if the event does not
-    exist. An event that exists but has no receipts yet still returns one row
-    per participant (total_paid/total_consumed = 0, via the view's COALESCE)."""
+    total_consumed, total_settled_sent, total_settled_received, net_balance}.
+    Raises ValueError if the event does not exist. An event that exists but
+    has no receipts/settlements yet still returns one row per participant
+    (all totals = 0, via the view's COALESCE)."""
     db = get_db()
     if db.execute("SELECT 1 FROM events WHERE id = ?", (event_id,)).fetchone() is None:
         raise ValueError(f"Event {event_id} does not exist")
 
     rows = db.execute(
         "SELECT eb.participant_id, p.name, eb.total_paid, eb.total_consumed, "
-        "eb.net_balance "
+        "eb.total_settled_sent, eb.total_settled_received, eb.net_balance "
         "FROM event_balances eb "
         "JOIN participants p ON p.id = eb.participant_id "
         "WHERE eb.event_id = ? ORDER BY p.name",
@@ -741,7 +897,9 @@ def get_event_balances(event_id: int) -> list[dict]:
             "participant_name": row[1],
             "total_paid": row[2],
             "total_consumed": row[3],
-            "net_balance": row[4],
+            "total_settled_sent": row[4],
+            "total_settled_received": row[5],
+            "net_balance": row[6],
         }
         for row in rows
     ]
@@ -750,15 +908,17 @@ def get_event_balances(event_id: int) -> list[dict]:
 def get_overall_balances() -> list[dict]:
     """Return the overall_balances view rows, one dict per participant with
     any event history: {participant_id, participant_name,
-    total_paid_all_events, total_consumed_all_events, total_net_balance}.
-    Participants with no event_participants rows at all are absent (the view
-    groups from event_balances, which is itself sourced from
-    event_participants) — this matches "no history yet" rather than "owes
-    zero", which is the correct semantics here."""
+    total_paid_all_events, total_consumed_all_events,
+    total_settled_sent_all_events, total_settled_received_all_events,
+    total_net_balance}. Participants with no event_participants rows at all
+    are absent (the view groups from event_balances, which is itself sourced
+    from event_participants) — this matches "no history yet" rather than
+    "owes zero", which is the correct semantics here."""
     db = get_db()
     rows = db.execute(
         "SELECT ob.participant_id, p.name, ob.total_paid_all_events, "
-        "ob.total_consumed_all_events, ob.total_net_balance "
+        "ob.total_consumed_all_events, ob.total_settled_sent_all_events, "
+        "ob.total_settled_received_all_events, ob.total_net_balance "
         "FROM overall_balances ob "
         "JOIN participants p ON p.id = ob.participant_id "
         "ORDER BY p.name"
@@ -769,7 +929,9 @@ def get_overall_balances() -> list[dict]:
             "participant_name": row[1],
             "total_paid_all_events": row[2],
             "total_consumed_all_events": row[3],
-            "total_net_balance": row[4],
+            "total_settled_sent_all_events": row[4],
+            "total_settled_received_all_events": row[5],
+            "total_net_balance": row[6],
         }
         for row in rows
     ]

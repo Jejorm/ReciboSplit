@@ -1,6 +1,6 @@
 """
-FastAPI application for ReciboSplit (Day 5 scope): participants, events,
-image upload, manual item capture, item assignments, and balance reads.
+FastAPI application for ReciboSplit: participants, events, image upload,
+manual item capture, item assignments, settlements, and balance reads.
 Endpoints call db.py functions only — no SQL is written here.
 """
 
@@ -160,6 +160,8 @@ class EventBalanceOut(BaseModel):
     participant_name: str
     total_paid: float
     total_consumed: float
+    total_settled_sent: float
+    total_settled_received: float
     net_balance: float
 
 
@@ -168,7 +170,39 @@ class OverallBalanceOut(BaseModel):
     participant_name: str
     total_paid_all_events: float
     total_consumed_all_events: float
+    total_settled_sent_all_events: float
+    total_settled_received_all_events: float
     total_net_balance: float
+
+
+class SettlementCreate(BaseModel):
+    from_participant_id: int
+    to_participant_id: int
+    amount: float = Field(gt=0)
+    note: Optional[str] = None
+
+
+class SettlementOut(BaseModel):
+    """One settlement scoped to a single event (returned by
+    GET /events/{event_id}/settlements, where the event is already known
+    from the URL)."""
+
+    id: int
+    from_participant_id: int
+    from_name: str
+    to_participant_id: int
+    to_name: str
+    amount: float
+    note: Optional[str] = None
+    created_at: str
+
+
+class SettlementWithEventOut(SettlementOut):
+    """A settlement plus its event, for the cross-event GET /settlements
+    listing."""
+
+    event_id: int
+    event_name: str
 
 
 class ProposedItemOut(BaseModel):
@@ -459,6 +493,52 @@ def set_item_assignments(
 def get_item_assignments(item_id: int) -> list[dict]:
     try:
         return db.get_item_assignments(item_id)
+    except ValueError as error:
+        raise value_error_to_http(error) from error
+
+
+# --- Settlements ------------------------------------------------------------------
+
+
+@app.post(
+    "/events/{event_id}/settlements",
+    response_model=IdResponse,
+    status_code=201,
+)
+def create_settlement(event_id: int, payload: SettlementCreate) -> IdResponse:
+    """Record a cash payment from one participant to another that settles a
+    debt (fully or partially) within an event. db.create_settlement
+    validates the event/participants exist and belong to the event."""
+    try:
+        settlement_id = db.create_settlement(
+            event_id=event_id,
+            from_participant_id=payload.from_participant_id,
+            to_participant_id=payload.to_participant_id,
+            amount=payload.amount,
+            note=payload.note,
+        )
+    except ValueError as error:
+        raise value_error_to_http(error) from error
+    return IdResponse(id=settlement_id)
+
+
+@app.get("/events/{event_id}/settlements", response_model=list[SettlementOut])
+def list_event_settlements(event_id: int) -> list[dict]:
+    try:
+        return db.list_event_settlements(event_id)
+    except ValueError as error:
+        raise value_error_to_http(error) from error
+
+
+@app.get("/settlements", response_model=list[SettlementWithEventOut])
+def list_all_settlements() -> list[dict]:
+    return db.list_all_settlements()
+
+
+@app.delete("/settlements/{settlement_id}", status_code=204)
+def delete_settlement(settlement_id: int) -> None:
+    try:
+        db.delete_settlement(settlement_id)
     except ValueError as error:
         raise value_error_to_http(error) from error
 

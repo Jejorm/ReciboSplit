@@ -1,56 +1,7 @@
--- ReciboSplit: esquema inicial para Turso (libSQL / SQLite)
--- Fase 1: solo subida de imagen (sin reconocimiento automático)
+-- Adds a settlements table (payments between participants to settle debts, fully or
+-- partially) and folds it into event_balances / overall_balances so net_balance
+-- accounts for cash settled outside the receipts themselves.
 
-CREATE TABLE participants (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
-CREATE TABLE events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    event_date TEXT,
-    currency TEXT NOT NULL DEFAULT 'USD',  -- display-only ISO 4217 code, no conversion
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- Quiénes participan en cada evento (parrillada, día de viaje, etc.)
-CREATE TABLE event_participants (
-    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    participant_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
-    PRIMARY KEY (event_id, participant_id)
-);
-
--- Un recibo subido (imagen) ligado a un evento y a quién pagó
-CREATE TABLE receipts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    image_path TEXT NOT NULL,
-    paid_by INTEGER NOT NULL REFERENCES participants(id),
-    total_amount REAL NOT NULL DEFAULT 0,
-    uploaded_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
--- Ítems capturados manualmente del recibo (fase 1: sin OCR/visión)
-CREATE TABLE items (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    receipt_id INTEGER NOT NULL REFERENCES receipts(id) ON DELETE CASCADE,
-    description TEXT NOT NULL,
-    price REAL NOT NULL,       -- precio total de la línea (ya incluye cantidad)
-    quantity INTEGER NOT NULL DEFAULT 1  -- informativo, no se usa en el cálculo de balance
-);
-
--- A quién(es) se le asigna el consumo de cada ítem, y en qué proporción
--- La suma de "share" para un mismo item_id debe ser 1.0
-CREATE TABLE item_assignments (
-    item_id INTEGER NOT NULL REFERENCES items(id) ON DELETE CASCADE,
-    participant_id INTEGER NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
-    share REAL NOT NULL DEFAULT 1.0,
-    PRIMARY KEY (item_id, participant_id)
-);
-
--- Pagos entre participantes para saldar deudas (total o parcialmente), dentro de un evento
 CREATE TABLE settlements (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
@@ -61,7 +12,9 @@ CREATE TABLE settlements (
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Balance por evento: cuánto pagó vs. cuánto consumió cada participante, ajustado por pagos entre participantes (settlements)
+DROP VIEW IF EXISTS overall_balances;
+DROP VIEW IF EXISTS event_balances;
+
 CREATE VIEW event_balances AS
 SELECT
     ep.event_id,
@@ -97,7 +50,6 @@ LEFT JOIN (
     GROUP BY event_id, to_participant_id
 ) settled_received ON settled_received.event_id = ep.event_id AND settled_received.participant_id = ep.participant_id;
 
--- Balance acumulado de todos los eventos (el número que realmente importa: quién debe en total)
 CREATE VIEW overall_balances AS
 SELECT
     participant_id,

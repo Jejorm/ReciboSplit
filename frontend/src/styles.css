@@ -768,6 +768,24 @@ select:disabled {
   width: 1%;
 }
 
+/* Net cell (balance tables): the badge plus an optional inline "Settle up"
+   action, with the "incl. payments" hint stacked below via .net-hint. */
+.net-cell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.net-hint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+  font-weight: 400;
+  font-variant-numeric: normal;
+}
+
 /* Balance badge: a tasteful tinted pill, tabular-nums. */
 .stamp {
   display: inline-flex;

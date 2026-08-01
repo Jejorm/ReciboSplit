@@ -118,3 +118,15 @@ export function deleteEvent(eventId) {
 export function deleteAllData() {
   return requestJson('/data', 'DELETE');
 }
+
+export function createSettlement(eventId, payload) {
+  return requestJson(`/events/${eventId}/settlements`, 'POST', payload);
+}
+
+export function getEventSettlements(eventId) {
+  return requestJson(`/events/${eventId}/settlements`);
+}
+
+export function deleteSettlement(settlementId) {
+  return requestJson(`/settlements/${settlementId}`, 'DELETE');
+}
