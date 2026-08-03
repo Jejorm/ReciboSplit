@@ -1,0 +1,11 @@
+// Cloudflare Worker config for the ReciboSplit frontend (static assets only).
+// Deploy with `npm run deploy` (builds with the production API URL, then
+// uploads ./dist). Serves https://recibosplit.jejorm8.workers.dev.
+{
+  "name": "recibosplit",
+  "account_id": "b611fde2bbd46fbd508f7c0919c1687c",
+  "compatibility_date": "2026-08-03",
+  "assets": {
+    "directory": "./dist"
+  }
+}
